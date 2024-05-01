@@ -1,0 +1,37 @@
+{
+  "name": "summaraize",
+  "version": "1.0.0",
+  "description": "The project aims to create an automatic system that converts diverse file formats (PDFs, images, audio) into text summaries using AI. Users can receive accurate summaries, edit them, organize into folders, and perform advanced searches. The goal is to offer a reliable and efficient user experience for summary creation and management.",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc && node dist/src/app.js",
+    "test": "tsc && jest --detectOpenHandles --forceExit --runInBand"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Matan-Eliyahu/SummarAIze.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Matan-Eliyahu/SummarAIze/issues"
+  },
+  "homepage": "https://github.com/Matan-Eliyahu/SummarAIze#readme",
+  "devDependencies": {
+    "@types/express": "^4.17.1",
+    "@types/jest": "^29.5.12",
+    "eslint": "^9.1.1",
+    "jest": "^29.7.0",
+    "supertest": "^7.0.0",
+    "ts-jest": "^29.1.2",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/mongoose": "^5.11.97",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "mongoose": "^8.3.3"
+  }
+}
