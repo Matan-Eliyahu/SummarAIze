@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsc && node dist/src/app.js",
-    "test": "tsc && jest --detectOpenHandles --forceExit --runInBand"
+    "test": "tsc && jest --detectOpenHandles --forceExit --runInBand",
+    "test-app": "tsc && jest --detectOpenHandles --forceExit --runInBand ./src/tests/app.test"
   },
   "repository": {
     "type": "git",

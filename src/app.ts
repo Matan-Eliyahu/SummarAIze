@@ -1,10 +1,8 @@
-import { Express } from "express";
-import mongoose from "mongoose";
-import "dotenv/config";
+import initServer from "./server";
 
-const dbUrl = process.env.DB_URL;
-
-mongoose
-  .connect(dbUrl)
-  .then((mon) => console.log("connected to DB"))
-  .catch((err) => console.log(err));
+initServer().then((app) => {
+  const port = process.env.SERVER_PORT;
+  app.listen(port, () => {
+    console.log(`Server is running on port ${port}`);
+  });
+});
