@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login and Upload</title>
+  </head>
+  <body>
+    <h1>User Registration and Login</h1>
+    <div id="registration">
+      <h2>Register</h2>
+      <input type="text" id="registerEmail" placeholder="Email" />
+      <input type="password" id="registerPassword" placeholder="Password" />
+      <input type="text" id="registerFullName" placeholder="Full Name" />
+      <button onclick="register()">Register</button>
+    </div>
+    <div id="login">
+      <h2>Login</h2>
+      <input type="text" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button onclick="login()">Login</button>
+    </div>
+    <div id="upload">
+      <h2>Upload File</h2>
+      <input type="file" id="fileInput" />
+      <button onclick="uploadFile()">Upload</button>
+      <div id="uploadResponse"></div>
+    </div>
+
+    <script>
+      async function register() {
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        const fullName = document.getElementById("registerFullName").value;
+
+        const response = await fetch("http://127.0.0.1:5000/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            fullName: fullName,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Registration successful:", data);
+        } else {
+          console.error("Registration failed:", response.statusText);
+        }
+      }
+
+      async function login() {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        const response = await fetch("http://127.0.0.1:5000/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Login successful:", data);
+          localStorage.setItem("accessToken", data.accessToken);
+        } else {
+          console.error("Login failed:", response.statusText);
+        }
+      }
+
+      async function uploadFile() {
+        const fileInput = document.getElementById("fileInput");
+        const file = fileInput.files[0];
+        const accessToken = localStorage.getItem("accessToken");
+
+        const formData = new FormData();
+        formData.append("file", file);
+
+        let uploadRoute = "";
+        if (file.type.startsWith("application/pdf")) {
+          uploadRoute = "pdf";
+        } else if (file.type.startsWith("image/")) {
+          uploadRoute = "image";
+        } else if (file.type.startsWith("audio/")) {
+          uploadRoute = "audio";
+        } else {
+          console.error("Unsupported file type");
+          return;
+        }
+
+        const response = await fetch(`http://127.0.0.1:5000/transcribe/${uploadRoute}`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Upload successful:", data);
+          document.getElementById("uploadResponse").innerText = data.text;
+        } else {
+          console.error("Upload failed:", response.statusText);
+          document.getElementById("uploadResponse").innerText = "Upload failed";
+        }
+      }
+    </script>
+  </body>
+</html>
