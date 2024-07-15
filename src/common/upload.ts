@@ -3,6 +3,8 @@ import path from "path";
 import fs from "fs";
 import { AuthRequest } from "../common/authMiddleware";
 
+export const UPLOADS_OUTPUT_PATH = path.join(__dirname, "..", "..", "public", "uploads");
+
 // Set storage engine
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -16,7 +18,7 @@ const storage = multer.diskStorage({
     } else {
       fileType = "pdf";
     }
-    const destinationPath = path.join(__dirname, "..", `../uploads/${userId}/${fileType}`);
+    const destinationPath = path.join(UPLOADS_OUTPUT_PATH, userId, fileType);
     // Check if the directory exists, create it if it doesn't
     if (!fs.existsSync(destinationPath)) {
       fs.mkdirSync(destinationPath, { recursive: true });

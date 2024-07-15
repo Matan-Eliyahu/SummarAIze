@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs";
 import http from "https";
 
+export const summOutputPath: string = path.join(__dirname, "..", "..", "public","summary");
+
 async function summarize(textToSummarize: string, summaryAdjustment?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     // HTTP request options
@@ -75,7 +77,7 @@ async function saveTextToFile(text: string, outputPath: string): Promise<void> {
 
 async function transcribeSummary(textToSummarize: string, userId: string, fileName: string, fileType: string, summaryAdjustment?: string): Promise<string> {
   const name = `${fileName}.txt`;
-  const outputPath: string = path.join(__dirname, "..", "..", "summary", userId, fileType, name);
+  const outputPath: string = path.join(summOutputPath, userId, fileType, name);
 
   try {
     const summarizedText = await summarize(textToSummarize, summaryAdjustment);

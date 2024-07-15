@@ -1,6 +1,7 @@
 import path from "path";
 import fs from "fs";
 import { ImageAnnotatorClient } from "@google-cloud/vision";
+import { transOutputPath } from "./audioService";
 
 async function transcribeImage(imagePath: string, userId: string, fileName: string): Promise<string> {
   // Specify the location of the api endpoint and the API key
@@ -22,7 +23,7 @@ async function transcribeImage(imagePath: string, userId: string, fileName: stri
     const name = `${fileName}.txt`;
 
     // Specify the output path for the transcript text file
-    const outputPath = path.join(__dirname, "..", "..", "transcribe", userId, "image", name);
+    const outputPath = path.join(transOutputPath, userId, "image", name);
 
     // Create the directory if it doesn't exist
     if (!fs.existsSync(path.dirname(outputPath))) {

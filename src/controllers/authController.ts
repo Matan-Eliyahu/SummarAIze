@@ -4,10 +4,6 @@ import User, { IUser } from "../models/userModel";
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
 
-const JWT_ACCESS_SECRET = process.env.JWT_SECRET;
-const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
-const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
-
 const register = async (req: Request, res: Response) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -34,8 +30,8 @@ const register = async (req: Request, res: Response) => {
 };
 
 const generateTokens = async (user: Document & IUser) => {
-  const accessToken = jwt.sign({ _id: user._id }, JWT_ACCESS_SECRET, { expiresIn: JWT_EXPIRATION });
-  const refreshToken = jwt.sign({ _id: user._id }, JWT_REFRESH_SECRET);
+  const accessToken = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
+  const refreshToken = jwt.sign({ _id: user._id }, process.env.JWT_REFRESH_SECRET);
   if (user.refreshTokens == null) {
     user.refreshTokens = [refreshToken];
   } else {
@@ -43,6 +39,7 @@ const generateTokens = async (user: Document & IUser) => {
   }
   await user.save();
   return {
+    userId: user._id,
     accessToken: accessToken,
     refreshToken: refreshToken,
   };
@@ -75,7 +72,7 @@ async function logout(req: Request, res: Response) {
   const refreshToken = authHeader && authHeader.split(" ")[1]; // JWT <refreshToken>
   if (refreshToken == null) return res.sendStatus(401);
 
-  jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, user) => {
+  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, user) => {
     if (err) {
       return res.status(403).send(err.message);
     }

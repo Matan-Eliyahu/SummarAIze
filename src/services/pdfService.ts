@@ -2,6 +2,7 @@ import path from "path";
 import fs from "fs";
 import pdf from "pdf-parse";
 import { detect } from "langdetect";
+import { transOutputPath } from "./audioService";
 
 async function convertPDFToText(pdfPath: string): Promise<string> {
   try {
@@ -54,7 +55,7 @@ async function saveTextToFile(text: string, outputPath: string): Promise<void> {
 async function transcribePDF(pdfPath: string, userId: string, fileName: string): Promise<string> {
   const name = `${fileName}.txt`;
   console.log(name);
-  const outputPath: string = path.join(__dirname, "..", "..", "transcribe", userId, "pdf", name);
+  const outputPath: string = path.join(transOutputPath, userId, "pdf", name);
   try {
     const text = await convertPDFToText(pdfPath);
     await saveTextToFile(text, outputPath);

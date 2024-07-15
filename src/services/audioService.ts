@@ -2,6 +2,8 @@ import path from "path";
 import fs from "fs";
 import { AssemblyAI, Transcript } from "assemblyai";
 
+export const transOutputPath = path.join(__dirname, "..", "..", "public", "transcribe");
+
 const client = new AssemblyAI({
   apiKey: process.env.API_KEY_ASSEMBLYAI,
 });
@@ -20,7 +22,7 @@ async function transcribeAudio(audioFilePath: string, userId: string, fileName: 
   try {
     const transcript: Transcript = await client.transcripts.create(data);
     const name = `${fileName}.txt`;
-    const outputPath = path.join(__dirname, "..", "..", "transcribe", userId, "audio", name);
+    const outputPath = path.join(transOutputPath, userId, "audio", name);
 
     // Ensure directory exists
     const outputDir = path.dirname(outputPath);

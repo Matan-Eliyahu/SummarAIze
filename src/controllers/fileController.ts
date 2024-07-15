@@ -1,13 +1,14 @@
 import { Request, Response } from "express";
 import fs from "fs";
 import path from "path";
+import { transOutputPath } from "../services/audioService";
+import { summOutputPath } from "../services/summaryService";
 
 const getFiles = async (req: Request, res: Response) => {
   try {
     const userId = req.params.id;
-    const transcribeDir = path.join(__dirname, "..", `../transcribe/${userId}`);
-    const summaryDir = path.join(__dirname, "..", `../summary/${userId}`);
-
+    const transcribeDir = path.join(transOutputPath, userId);
+    const summaryDir = path.join(summOutputPath, userId);
     const combinedData = await getCombinedFilesData(transcribeDir, summaryDir);
 
     res.status(200).json(combinedData);
