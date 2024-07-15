@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login and Upload</title>
+    <style>
+      .file-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 10px;
+      }
+      .file-item img {
+        width: 30px;
+        height: 30px;
+        margin-right: 10px;
+      }
+      .file-item button {
+        margin-left: 10px;
+      }
+      #contentDisplay {
+        margin-top: 20px;
+        white-space: pre-wrap; /* Preserve whitespace formatting */
+      }
+      #filesContainer {
+        display: none;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>User Registration and Login</h1>
+    <div id="registration">
+      <h2>Register</h2>
+      <input type="text" id="registerEmail" placeholder="Email" />
+      <input type="password" id="registerPassword" placeholder="Password" />
+      <input type="text" id="registerFullName" placeholder="Full Name" />
+      <button onclick="register()">Register</button>
+    </div>
+    <div id="login">
+      <h2>Login</h2>
+      <input type="text" id="loginEmail" placeholder="Email" />
+      <input type="password" id="loginPassword" placeholder="Password" />
+      <button onclick="login()">Login</button>
+    </div>
+    <div id="uploadAndSummarize">
+      <h2>Upload File And Summarize</h2>
+      <input type="file" id="fileInputSummarize" />
+      <button onclick="uploadFileAndSummarize()">Upload</button>
+      <div id="summarizeUploadResponse"></div>
+    </div>
+    <div id="summaryAdjustmentSection" style="display: none">
+      <h2>Summary adjustment</h2>
+      <input type="text" id="summaryAdjustmentInput" placeholder="Enter your summary adjustment" />
+      <button onclick="sendSummaryAdjustment()">Send</button>
+      <div id="summaryAdjustmentResponse"></div>
+    </div>
+    <div id="filesContainer">
+      <h2>User Files</h2>
+    </div>
+    <div id="contentDisplay">
+      <h2>Content Display</h2>
+      <div id="contentText"></div>
+    </div>
+    <script>
+      async function register() {
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        const fullName = document.getElementById("registerFullName").value;
+
+        const response = await fetch("http://127.0.0.1:5000/auth/register", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+            fullName: fullName,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Registration successful:", data);
+        } else {
+          console.error("Registration failed:", response.statusText);
+        }
+      }
+
+      async function login() {
+        const email = document.getElementById("loginEmail").value;
+        const password = document.getElementById("loginPassword").value;
+
+        const response = await fetch("http://127.0.0.1:5000/auth/login", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            email: email,
+            password: password,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Login successful:", data);
+          localStorage.setItem("accessToken", data.accessToken);
+          localStorage.setItem("userID", data.userId);
+          console.log(data.userId);
+
+          // Fetch user's files after successful login
+          await fetchUserFiles(data.userId);
+        } else {
+          console.error("Login failed:", response.statusText);
+        }
+      }
+
+      async function fetchUserFiles(userId) {
+        const accessToken = localStorage.getItem("accessToken");
+
+        const response = await fetch(`http://127.0.0.1:5000/file/${userId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("User's files:", data);
+          displayFiles(data);
+        } else {
+          console.error("Failed to fetch user's files:", response.statusText);
+        }
+      }
+
+      function displayFiles(data) {
+        const filesContainer = document.getElementById("filesContainer");
+        filesContainer.style.display = "block"; // Show the files container
+
+        filesContainer.innerHTML = ""; // Clear any previous content
+
+        data.forEach((file) => {
+          const fileItem = document.createElement("div");
+          fileItem.className = "file-item";
+
+          const icon = document.createElement("img");
+          if (file.type === "pdf") {
+            icon.src = "path/to/pdf-icon.png"; // Replace with your icon path
+          } else if (file.type === "image") {
+            icon.src = "path/to/image-icon.png"; // Replace with your icon path
+          } else if (file.type === "audio") {
+            icon.src = "path/to/audio-icon.png"; // Replace with your icon path
+          }
+
+          const fileName = document.createElement("span");
+          fileName.innerText = file.name;
+
+          const transcribeButton = document.createElement("button");
+          transcribeButton.innerText = "Transcribe Content";
+          transcribeButton.onclick = () => displayContent(file.transcribeContent);
+
+          const summaryButton = document.createElement("button");
+          summaryButton.innerText = "Summary Content";
+          summaryButton.onclick = () => displayContent(file.summaryContent);
+
+          fileItem.appendChild(icon);
+          fileItem.appendChild(fileName);
+          fileItem.appendChild(transcribeButton);
+          fileItem.appendChild(summaryButton);
+          filesContainer.appendChild(fileItem);
+        });
+      }
+
+      function displayContent(content) {
+        const contentDisplay = document.getElementById("contentText");
+        contentDisplay.innerText = content;
+      }
+
+      async function uploadFileAndSummarize() {
+        const fileInput = document.getElementById("fileInputSummarize");
+        const file = fileInput.files[0];
+        const accessToken = localStorage.getItem("accessToken");
+
+        // Extract filename and file type
+        const fileName = file.name;
+        const fileNameOnly = fileName.split(".")[0]; // Extracting just the file name
+        let fileType;
+        if (file.type.startsWith("application/pdf")) {
+          fileType = "pdf";
+        } else if (file.type.startsWith("image/")) {
+          fileType = "image";
+        } else if (file.type.startsWith("audio/")) {
+          fileType = "audio";
+        } else {
+          console.error("Unsupported file type");
+          return;
+        }
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch(`http://127.0.0.1:5000/transcribe/summary`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: formData,
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Upload successful:", data);
+          document.getElementById("summarizeUploadResponse").innerText = data.text;
+
+          // Store filename and file type for later use
+          localStorage.setItem("fileName", fileNameOnly);
+          localStorage.setItem("fileType", fileType);
+
+          document.getElementById("summaryAdjustmentSection").style.display = "block"; // Show summaryAdjustment section
+          await fetchUserFiles(data.userId);
+        } else {
+          console.error("Upload failed:", response.statusText);
+          document.getElementById("summarizeUploadResponse").innerText = "Upload failed";
+        }
+      }
+
+      async function sendSummaryAdjustment() {
+        const summaryAdjustment = document.getElementById("summaryAdjustmentInput").value;
+        const accessToken = localStorage.getItem("accessToken");
+        const summarizedText = document.getElementById("summarizeUploadResponse").innerText; // Get summarized text
+        const fileName = localStorage.getItem("fileName"); // Retrieve filename
+        const fileType = localStorage.getItem("fileType"); // Retrieve file type
+
+        const response = await fetch("http://127.0.0.1:5000/transcribe/adjustment", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify({
+            summaryAdjustment: summaryAdjustment,
+            summarizedText: summarizedText,
+            fileName: fileName,
+            fileType: fileType,
+          }),
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("summaryAdjustment sent successfully");
+          document.getElementById("summaryAdjustmentResponse").innerText = data.text; // Display summaryAdjustment summary
+        } else {
+          console.error("Failed to send summaryAdjustment:", response.statusText);
+          // Handle error
+        }
+      }
+    </script>
+  </body>
+</html>
