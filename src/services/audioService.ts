@@ -1,41 +1,24 @@
-import path from "path";
-import fs from "fs";
-import { AssemblyAI, Transcript } from "assemblyai";
+import { FileToTextConverter } from "../common/types";
+import { AssemblyAI, TranscribeParams, Transcript } from "assemblyai";
 
-export const transOutputPath = path.join(__dirname, "..", "..", "public", "transcribe");
-
-const client = new AssemblyAI({
-  apiKey: process.env.API_KEY_ASSEMBLYAI,
+const AssemblyAi = new AssemblyAI({
+  apiKey: process.env.ASSEMBLYAI_API_KEY,
 });
 
-interface TranscriptionData {
-  audio_url: string;
-  language_detection: boolean;
-}
-
-async function transcribeAudio(audioFilePath: string, userId: string, fileName: string) {
-  const data: TranscriptionData = {
-    audio_url: audioFilePath,
-    language_detection: true,
-  };
-
-  try {
-    const transcript: Transcript = await client.transcripts.create(data);
-    const name = `${fileName}.txt`;
-    const outputPath = path.join(transOutputPath, userId, "audio", name);
-
-    // Ensure directory exists
-    const outputDir = path.dirname(outputPath);
-    if (!fs.existsSync(outputDir)) {
-      fs.mkdirSync(outputDir, { recursive: true });
+class AudioService implements FileToTextConverter {
+  async convertToText(file: Express.Multer.File): Promise<string> {
+    const options: TranscribeParams = {
+      audio_url: file.path,
+      language_detection: true,
+    };
+    try {
+      const result: Transcript = await AssemblyAi.transcripts.create(options);
+      const text = result.text;
+      return text;
+    } catch (error) {
+      throw error;
     }
-
-    fs.writeFileSync(outputPath, transcript.text);
-    console.log(`Transcription saved to ${outputPath}`);
-    return transcript.text;
-  } catch (error) {
-    console.error("Error:", error);
   }
 }
 
-export default transcribeAudio;
+export default new AudioService();

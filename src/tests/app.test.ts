@@ -1,7 +1,7 @@
 import path from "path";
-import transcribeAudio from "../services/audioService";
-import transcribePDF from "../services/pdfService";
-import transcribeImage from "../services/imageService";
+import transcribeAudio from "../services/AudioService";
+import transcribePDF from "../services/PdfService";
+import transcribeImage from "../services/ImageService";
 
 describe("App tests", () => {
   //test("audio to text check", async () => {

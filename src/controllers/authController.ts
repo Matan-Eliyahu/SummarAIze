@@ -1,31 +1,22 @@
 import { Request, Response } from "express";
 import bcrypt from "bcrypt";
-import User, { IUser } from "../models/userModel";
+import User, { IUser } from "../models/UserModel";
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
+import { IAuth } from "../common/types";
 
 const register = async (req: Request, res: Response) => {
-  const email = req.body.email;
-  const password = req.body.password;
-  const fullName = req.body.fullName;
+  const userData: IUser = req.body;
   try {
-    const rs = await User.findOne({ email: email });
-    if (rs != null) {
+    const findUser = await User.findOne({ email: userData.email });
+    if (findUser) {
       return res.status(406).send("email already exists");
     }
-    const rs2 = await User.create({
-      email: email,
-      password: password,
-      fullName: fullName,
-    });
-    const tokens = await generateTokens(rs2);
-    res.status(201).send({
-      email: rs2.email,
-      _id: rs2._id,
-      ...tokens,
-    });
-  } catch (err) {
-    return res.status(400).send(err.message);
+    const user = await User.create(userData);
+    res.status(201).send(user._id);
+  } catch (error) {
+    console.log("Registration error: ", error);
+    return res.status(400).send(error.message);
   }
 };
 
@@ -61,7 +52,12 @@ const login = async (req: Request, res: Response) => {
       return res.status(401).send("email or password incorrect");
     }
     const tokens = await generateTokens(user);
-    return res.status(200).send(tokens);
+    const auth: IAuth = {
+      id: user._id,
+      email: user.email,
+      ...tokens,
+    };
+    return res.status(200).send(auth);
   } catch (err) {
     return res.status(400).send("error missing email or password");
   }

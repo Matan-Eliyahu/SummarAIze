@@ -1,8 +1,8 @@
 import express from "express";
-import fileController from "../controllers/fileController";
+import FileController from "../controllers/FileController";
 
 const router = express.Router();
 
-router.get("/:id", fileController.getFiles);
+router.get("/:id", FileController.getUserFiles.bind(FileController));
 
 export default router;

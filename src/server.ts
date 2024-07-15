@@ -2,9 +2,9 @@ import "dotenv/config";
 import express, { Express } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import authRoutes from "./routes/authRoute";
-import transcribeRoutes from "./routes/transcribeRoute";
-import fileRoutes from "./routes/fileRoute";
+import AuthRoute from "./routes/AuthRoute"
+import SummarizeRoute from "./routes/SummarizeRoute";
+import FileRoute from "./routes/FileRoute";
 
 function initServer(): Promise<Express> {
   const promise = new Promise<Express>((resolve) => {
@@ -15,9 +15,9 @@ function initServer(): Promise<Express> {
       const app = express();
       app.use(express.json());
       app.use(cors());
-      app.use("/auth", authRoutes);
-      app.use("/transcribe", transcribeRoutes);
-      app.use("/file", fileRoutes);
+      app.use("/auth", AuthRoute);
+      app.use("/summarize", SummarizeRoute);
+      app.use("/file", FileRoute);
       resolve(app);
     });
   });
