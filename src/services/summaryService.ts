@@ -1,54 +1,55 @@
 import path from "path";
 import fs from "fs";
-
-const http = require('https');
+import http from "https";
 
 async function summarize(textToSummarize: string, summaryAdjustment?: string): Promise<string> {
   return new Promise((resolve, reject) => {
     // HTTP request options
     const options = {
-      method: 'POST',
-      hostname: 'open-ai21.p.rapidapi.com',
+      method: "POST",
+      hostname: "open-ai21.p.rapidapi.com",
       port: null,
-      path: '/chatgpt',
+      path: "/chatgpt",
       headers: {
-        'content-type': 'application/json',
-        'X-RapidAPI-Key': process.env.API_KEY_RAPID,
-        'X-RapidAPI-Host': 'open-ai21.p.rapidapi.com'
-      }
+        "content-type": "application/json",
+        "X-RapidAPI-Key": process.env.API_KEY_RAPID,
+        "X-RapidAPI-Host": "open-ai21.p.rapidapi.com",
+      },
     };
 
     // HTTP request
     const req = http.request(options, function (res) {
       const chunks = [];
 
-      res.on('data', function (chunk) {
-          chunks.push(chunk);
+      res.on("data", function (chunk) {
+        chunks.push(chunk);
       });
 
-      res.on('end', function () {
-          const body = Buffer.concat(chunks);
-          const jsonObject = JSON.parse(body.toString());
-          const resultText = jsonObject.result;
-          resolve(resultText); // Resolve with the response text
+      res.on("end", function () {
+        const body = Buffer.concat(chunks);
+        const jsonObject = JSON.parse(body.toString());
+        const resultText = jsonObject.result;
+        resolve(resultText); // Resolve with the response text
       });
     });
 
     // Handle request error
-    req.on('error', function (err) {
+    req.on("error", function (err) {
       reject(err);
     });
 
     // Write data to request body
-    req.write(JSON.stringify({
-      messages: [
+    req.write(
+      JSON.stringify({
+        messages: [
           {
-              role: 'user',
-              content: `Only the summarize of this text in your response: ${summaryAdjustment ? `${textToSummarize}\n\nsummaryAdjustment: ${summaryAdjustment}` : textToSummarize}`
-          }
-      ],
-      web_access: false
-    }));
+            role: "user",
+            content: `Only the summarize of this text in your response: ${summaryAdjustment ? `${textToSummarize}\n\nsummaryAdjustment: ${summaryAdjustment}` : textToSummarize}`,
+          },
+        ],
+        web_access: false,
+      })
+    );
 
     req.end(); // End the request
   });

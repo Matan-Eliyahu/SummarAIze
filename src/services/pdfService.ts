@@ -2,7 +2,6 @@ import path from "path";
 import fs from "fs";
 import pdf from "pdf-parse";
 import { detect } from "langdetect";
-import { v4 as uuidv4 } from "uuid";
 
 async function convertPDFToText(pdfPath: string): Promise<string> {
   try {

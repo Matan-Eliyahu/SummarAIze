@@ -4,6 +4,10 @@ import User, { IUser } from "../models/userModel";
 import jwt from "jsonwebtoken";
 import { Document } from "mongoose";
 
+const JWT_ACCESS_SECRET = process.env.JWT_SECRET;
+const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
+const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+
 const register = async (req: Request, res: Response) => {
   const email = req.body.email;
   const password = req.body.password;
@@ -30,8 +34,8 @@ const register = async (req: Request, res: Response) => {
 };
 
 const generateTokens = async (user: Document & IUser) => {
-  const accessToken = jwt.sign({ _id: user._id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRATION });
-  const refreshToken = jwt.sign({ _id: user._id }, process.env.JWT_REFRESH_SECRET);
+  const accessToken = jwt.sign({ _id: user._id }, JWT_ACCESS_SECRET, { expiresIn: JWT_EXPIRATION });
+  const refreshToken = jwt.sign({ _id: user._id }, JWT_REFRESH_SECRET);
   if (user.refreshTokens == null) {
     user.refreshTokens = [refreshToken];
   } else {
@@ -66,7 +70,40 @@ const login = async (req: Request, res: Response) => {
   }
 };
 
+async function logout(req: Request, res: Response) {
+  const authHeader = req.headers["authorization"];
+  const refreshToken = authHeader && authHeader.split(" ")[1]; // JWT <refreshToken>
+  if (refreshToken == null) return res.sendStatus(401);
+
+  jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, user) => {
+    if (err) {
+      return res.status(403).send(err.message);
+    }
+    const userInfo = user as { _id: string; time: Date };
+    try {
+      const user = await User.findById({ _id: userInfo._id });
+      // if (user == null) res.status(403).send("Invalid request");
+      if (!user.refreshTokens || !user.refreshTokens.includes(refreshToken)) {
+        user.refreshTokens = []; // invalidate all user tokens
+        await user.save();
+        return res.status(403).send("Invalid request");
+      } else {
+        user.refreshTokens = user.refreshTokens.filter((t) => t !== refreshToken);
+        await user.save();
+        return res.sendStatus(200);
+      }
+
+      // user.tokens.splice(user.tokens.indexOf(refreshToken), 1);
+      // await user.save();
+      // return res.sendStatus(200);
+    } catch (error) {
+      res.status(403).send(error.message);
+    }
+  });
+}
+
 export default {
   register,
   login,
+  logout,
 };
