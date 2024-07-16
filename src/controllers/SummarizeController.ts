@@ -26,6 +26,8 @@ class SummarizeController {
     const fileName = path.parse(req.file.filename).name;
     const userId = req.user._id;
 
+    console.log(`Summarize ${fileName}...`)
+
     try {
       // Parse to text
       switch (type) {

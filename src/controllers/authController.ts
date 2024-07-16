@@ -96,6 +96,7 @@ async function logout(req: Request, res: Response) {
 
   jwt.verify(refreshToken, JWT_REFRESH_SECRET, async (err, user) => {
     if (err) {
+      console.log(err);
       return res.status(403).send(err.message);
     }
     const userPayload = user as { _id: string; time: Date };
@@ -111,6 +112,7 @@ async function logout(req: Request, res: Response) {
         return res.sendStatus(200);
       }
     } catch (error) {
+      console.log(error);
       res.status(403).send(error.message);
     }
   });
