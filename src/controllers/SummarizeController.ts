@@ -38,7 +38,7 @@ class SummarizeController {
 
       return res.status(201).send({ text: summary });
     } catch (error) {
-      console.log("Summarize error: ", error);
+      // console.log("Summarize error: ", error);
       return res.status(500).send("Internal server error");
     }
   }
