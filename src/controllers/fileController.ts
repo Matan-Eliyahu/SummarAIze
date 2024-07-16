@@ -49,12 +49,12 @@ class FileController {
               const transcribeContent = await fs.promises.readFile(path.join(transcribeTypeDir, file), "utf-8");
               const summaryContent = await fs.promises.readFile(path.join(summaryTypeDir, file), "utf-8");
 
-              const newFile:IFile = {
-                name:fileName,
-                transcribe:transcribeContent,
-                summary:summaryContent,
-                type:type
-              }
+              const newFile: IFile = {
+                name: fileName,
+                transcribe: transcribeContent,
+                summary: summaryContent,
+                type: type,
+              };
               return newFile;
             }
           })

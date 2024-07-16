@@ -12,6 +12,7 @@ function initServer(): Promise<Express> {
     db.on("error", (error) => console.error(error));
     const dbUrl = process.env.DB_URL;
     mongoose.connect(dbUrl).then(() => {
+      console.log(">> DB connected");
       const app = express();
       app.use(express.json());
       app.use(cors());

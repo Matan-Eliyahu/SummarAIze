@@ -1,5 +1,6 @@
 import path from "path";
 import fs from "fs";
+import { FileType } from "../common/types";
 
 export async function saveTextToFile(text: string, outputDir: string): Promise<void> {
   try {
@@ -8,8 +9,7 @@ export async function saveTextToFile(text: string, outputDir: string): Promise<v
     if (!fs.existsSync(dirPath)) {
       fs.mkdirSync(dirPath, { recursive: true });
     }
-
-    fs.writeFileSync(outputDir, text);
+    fs.writeFileSync(`${outputDir}.txt`, text);
   } catch (error) {
     throw error;
   }
@@ -25,4 +25,16 @@ export async function readFilesFromDirectory(directory: string): Promise<string[
       }
     });
   });
+}
+
+export function getFileType(mimeType: string): FileType {
+  if (mimeType.startsWith("image/")) {
+    return "image";
+  } else if (mimeType.startsWith("audio/")) {
+    return "audio";
+  } else if (mimeType === "application/pdf") {
+    return "pdf";
+  } else {
+    throw new Error("Unsupported file type.");
+  }
 }
