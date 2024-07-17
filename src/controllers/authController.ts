@@ -3,10 +3,12 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import UserModel, { IUser } from "../models/UserModel";
 import { Document } from "mongoose";
+import { OAuth2Client } from "google-auth-library";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+const client = new OAuth2Client();
 
 export interface AuthRequest extends Request {
   user?: { _id: string };
@@ -84,8 +86,44 @@ async function login(req: Request, res: Response) {
       tokens,
     };
     return res.status(200).send(auth);
-  } catch (err) {
+  } catch (error) {
+    console.log("Login error: ", error);
     return res.status(400).send("error missing email or password");
+  }
+}
+
+async function googleSignin(req: Request, res: Response) {
+  const credential = req.body.credential;
+  try {
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+    const payload = ticket.getPayload();
+    const email = payload?.email;
+    if (email != null) {
+      let findUser = await UserModel.findOne({ email: email });
+      // If user exist return
+      if (findUser) return res.status(406).send("Email already exists");
+      // Create new user from payload info
+      const newGoogleUser: IUser = {
+        fullName: payload?.given_name + " " + payload?.family_name,
+        email: email,
+        password: "googlegoogle",
+        // imageUrl: payload?.picture,
+      };
+      findUser = await UserModel.create(newGoogleUser);
+      const tokens = await generateTokens(findUser);
+      const auth: IAuth = {
+        id: findUser._id,
+        email: findUser.email,
+        tokens,
+      };
+      res.status(200).send(auth);
+    }
+  } catch (error) {
+    console.log("Google singin error: ", error);
+    return res.status(400).send(error.message);
   }
 }
 
@@ -112,7 +150,7 @@ async function logout(req: Request, res: Response) {
         return res.sendStatus(200);
       }
     } catch (error) {
-      console.log(error);
+      console.log("Logout error: ", error);
       res.status(403).send(error.message);
     }
   });
@@ -155,7 +193,7 @@ async function refreshToken(req: Request, res: Response) {
       };
       return res.status(200).send(newAuth);
     } catch (error) {
-      console.log(error.message);
+      console.log("Refresh tokens error: ", error);
       res.status(403).send(error.message);
     }
   });
@@ -164,6 +202,7 @@ async function refreshToken(req: Request, res: Response) {
 export default {
   register,
   login,
+  googleSignin,
   logout,
   refreshToken,
 };
