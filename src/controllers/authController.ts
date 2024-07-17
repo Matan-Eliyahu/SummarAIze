@@ -67,16 +67,16 @@ async function login(req: Request, res: Response) {
   const email = req.body.email;
   const password = req.body.password;
   if (!email || !password) {
-    return res.status(400).send("missing email or password");
+    return res.status(400).send("Email or password is missing");
   }
   try {
     const user = await UserModel.findOne({ email: email });
     if (user == null) {
-      return res.status(401).send("email or password incorrect");
+      return res.status(401).send("Incorrect email or password");
     }
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      return res.status(401).send("email or password incorrect");
+      return res.status(401).send("Incorrect email or password");
     }
 
     const tokens = await generateTokens(user);
@@ -88,7 +88,7 @@ async function login(req: Request, res: Response) {
     return res.status(200).send(auth);
   } catch (error) {
     console.log("Login error: ", error);
-    return res.status(400).send("error missing email or password");
+    return res.status(400).send("Email or password is missing");
   }
 }
 
@@ -102,21 +102,20 @@ async function googleSignin(req: Request, res: Response) {
     const payload = ticket.getPayload();
     const email = payload?.email;
     if (email != null) {
-      let findUser = await UserModel.findOne({ email: email });
-      // If user exist return
-      if (findUser) return res.status(406).send("Email already exists");
-      // Create new user from payload info
-      const newGoogleUser: IUser = {
-        fullName: payload?.given_name + " " + payload?.family_name,
-        email: email,
-        password: "googlegoogle",
-        // imageUrl: payload?.picture,
-      };
-      findUser = await UserModel.create(newGoogleUser);
-      const tokens = await generateTokens(findUser);
+      let user = await UserModel.findOne({ email: email });
+      if (user == null) {
+        const newGoogleUser: IUser = {
+          fullName: payload?.given_name + " " + payload?.family_name,
+          email: email,
+          password: "googlegoogle",
+          // imageUrl: payload?.picture,
+        };
+        user = await UserModel.create(newGoogleUser);
+      }
+      const tokens = await generateTokens(user);
       const auth: IAuth = {
-        id: findUser._id,
-        email: findUser.email,
+        id: user._id,
+        email: user.email,
         tokens,
       };
       res.status(200).send(auth);
