@@ -4,10 +4,12 @@ import bcrypt from "bcrypt";
 import UserModel, { IUser } from "../models/UserModel";
 import { Document } from "mongoose";
 import { OAuth2Client } from "google-auth-library";
+import axios from "axios";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
+const GOOGLE_USER_INFO_URL = process.env.GOOGLE_USER_INFO_URL;
 const client = new OAuth2Client();
 
 export interface AuthRequest extends Request {
@@ -15,13 +17,25 @@ export interface AuthRequest extends Request {
 }
 export interface IAuth {
   id: string;
+  fullName: string;
   email: string;
+  imageUrl: string;
   tokens: ITokens;
 }
 
 export interface ITokens {
   accessToken: string;
   refreshToken: string;
+}
+
+interface GoogleUserInfo {
+  sub: string;
+  name: string;
+  given_name: string;
+  family_name: string;
+  picture: string;
+  email: string;
+  email_verified: boolean;
 }
 
 async function generateTokens(user: Document & IUser) {
@@ -82,7 +96,9 @@ async function login(req: Request, res: Response) {
     const tokens = await generateTokens(user);
     const auth: IAuth = {
       id: user._id,
+      fullName: user.fullName,
       email: user.email,
+      imageUrl: user.imageUrl,
       tokens,
     };
     return res.status(200).send(auth);
@@ -93,33 +109,31 @@ async function login(req: Request, res: Response) {
 }
 
 async function googleSignin(req: Request, res: Response) {
-  const credential = req.body.credential;
+  const tokenResponse = req.body;
+  if (!tokenResponse.access_token) return res.status(403).send("Goolge login failed");
+  const { access_token: accessToken } = tokenResponse;
   try {
-    const ticket = await client.verifyIdToken({
-      idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
-    });
-    const payload = ticket.getPayload();
-    const email = payload?.email;
-    if (email != null) {
-      let user = await UserModel.findOne({ email: email });
-      if (user == null) {
-        const newGoogleUser: IUser = {
-          fullName: payload?.given_name + " " + payload?.family_name,
-          email: email,
-          password: "googlegoogle",
-          // imageUrl: payload?.picture,
-        };
-        user = await UserModel.create(newGoogleUser);
-      }
-      const tokens = await generateTokens(user);
-      const auth: IAuth = {
-        id: user._id,
-        email: user.email,
-        tokens,
+    const userInfo: GoogleUserInfo = await getGoolgeUserInfo(accessToken);
+    const { email, given_name, family_name, picture } = userInfo;
+    let user = await UserModel.findOne({ email: email });
+    if (user == null) {
+      const newGoogleUser: IUser = {
+        fullName: given_name + " " + family_name,
+        email,
+        password: "googlegoogle",
+        imageUrl: picture,
       };
-      res.status(200).send(auth);
+      user = await UserModel.create(newGoogleUser);
     }
+    const tokens = await generateTokens(user);
+    const auth: IAuth = {
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      imageUrl: user.imageUrl,
+      tokens,
+    };
+    res.status(200).send(auth);
   } catch (error) {
     console.log("Google singin error: ", error);
     return res.status(400).send(error.message);
@@ -187,7 +201,9 @@ async function refreshToken(req: Request, res: Response) {
       };
       const newAuth: IAuth = {
         id: user._id,
+        fullName: user.fullName,
         email: user.email,
+        imageUrl: user.imageUrl,
         tokens,
       };
       return res.status(200).send(newAuth);
@@ -196,6 +212,20 @@ async function refreshToken(req: Request, res: Response) {
       res.status(403).send(error.message);
     }
   });
+}
+
+async function getGoolgeUserInfo(accessToken: string): Promise<GoogleUserInfo> {
+  try {
+    const res = await axios.get(GOOGLE_USER_INFO_URL, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const googleUserInfo: GoogleUserInfo = res.data;
+    return googleUserInfo;
+  } catch (error) {
+    throw error;
+  }
 }
 
 export default {

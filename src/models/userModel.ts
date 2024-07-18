@@ -5,6 +5,7 @@ export interface IUser {
   fullName: string;
   email: string;
   password: string;
+  imageUrl: string;
   refreshTokens?: string[];
 }
 
@@ -12,6 +13,7 @@ const userSchema = new Schema<IUser & Document>({
   fullName: { type: String, required: [true, "Please provide full name"] },
   email: { type: String, required: [true, "Please provide your email"], unique: true },
   password: { type: String, required: [true, "Please provide password"], minlength: 8 },
+  imageUrl: { type: String, default:"" },
   refreshTokens: { type: [String], required: false },
 });
 
