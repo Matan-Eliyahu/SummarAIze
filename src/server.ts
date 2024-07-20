@@ -2,9 +2,10 @@ import "dotenv/config";
 import express, { Express } from "express";
 import cors from "cors";
 import mongoose from "mongoose";
-import AuthRoute from "./routes/AuthRoute"
+import AuthRoute from "./routes/AuthRoute";
 import SummarizeRoute from "./routes/SummarizeRoute";
 import FileRoute from "./routes/FileRoute";
+import SettingsRoute from "./routes/SettingsRoute";
 
 function initServer(): Promise<Express> {
   const promise = new Promise<Express>((resolve) => {
@@ -19,6 +20,7 @@ function initServer(): Promise<Express> {
       app.use("/auth", AuthRoute);
       app.use("/summarize", SummarizeRoute);
       app.use("/file", FileRoute);
+      app.use("/settings", SettingsRoute);
       resolve(app);
     });
   });

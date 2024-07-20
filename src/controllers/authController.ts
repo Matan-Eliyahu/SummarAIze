@@ -3,14 +3,13 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import UserModel, { IUser } from "../models/UserModel";
 import { Document } from "mongoose";
-import { OAuth2Client } from "google-auth-library";
 import axios from "axios";
+import SettingsModel, { ISettings } from "../models/SettingsModel";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const GOOGLE_USER_INFO_URL = process.env.GOOGLE_USER_INFO_URL;
-const client = new OAuth2Client();
 
 export interface AuthRequest extends Request {
   user?: { _id: string };
@@ -59,7 +58,24 @@ async function generateTokens(user: Document & IUser) {
   return tokens;
 }
 
-const register = async (req: Request, res: Response) => {
+async function setupUser(userData: IUser) {
+  try {
+    const user = await UserModel.create(userData);
+    const defaultSettings: ISettings = {
+      userId: user._id,
+      allowedFileTypes: ["pdf", "image", "audio"],
+      autoSummarizeEnabled: false,
+      smartSearchEnabled: true,
+      clearFilesAfterDays: 90,
+    };
+    await SettingsModel.create(defaultSettings);
+    return user;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function register(req: Request, res: Response) {
   const userData: IUser = req.body;
   if (!userData.email || !userData.password) {
     return res.status(400).send("Email or password is missing");
@@ -69,13 +85,13 @@ const register = async (req: Request, res: Response) => {
     if (findUser) {
       return res.status(406).send("Email already exists");
     }
-    const user = await UserModel.create(userData);
+    const user = await setupUser(userData);
     res.status(201).send({ _id: user._id });
   } catch (error) {
     console.log("Registration error: ", error);
     return res.status(400).send(error.message);
   }
-};
+}
 
 async function login(req: Request, res: Response) {
   const email = req.body.email;
@@ -123,7 +139,7 @@ async function googleSignin(req: Request, res: Response) {
         password: "googlegoogle",
         imageUrl: picture,
       };
-      user = await UserModel.create(newGoogleUser);
+      user = await setupUser(newGoogleUser);
     }
     const tokens = await generateTokens(user);
     const auth: IAuth = {

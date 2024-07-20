@@ -1,11 +1,12 @@
 import path from "path";
 import { Response } from "express";
 import { AuthRequest } from "./AuthController";
-import ImageService from "../services/ImageService";
-import PdfService from "../services/PdfService";
-import AudioService from "../services/AudioService";
+import FileService from "../services/FileService";
 import SummarizeService from "../services/SummarizeService";
 import { getFileType, saveTextToFile } from "../utils/files";
+import SettingsModel from "../models/SettingsModel";
+import fileProcessingQueue from "../queues/fileProcessingQueue";
+import { FileStatus } from "../models/FileModel";
 
 const PUBLIC_PATH = path.join(__dirname, "..", "..", "public");
 
@@ -21,40 +22,33 @@ class SummarizeController {
     const { file } = req;
     if (!file) return res.status(400).send("No file found");
 
-    let text: string;
     const type = getFileType(file.mimetype);
     const fileName = path.parse(req.file.filename).name;
     const userId = req.user._id;
 
-    console.log(`Summarize ${fileName}...`)
+    console.log(`Summarize ${fileName}...`);
 
     try {
-      // Parse to text
-      switch (type) {
-        case "image":
-          text = await ImageService.convertToText(file);
-          break;
-        case "audio":
-          text = await AudioService.convertToText(file);
-          break;
-        case "pdf":
-          text = await PdfService.convertToText(file);
-          break;
-        default:
-          text = null;
+      // Get user settings
+      const userSettings = await SettingsModel.findOne({ userId });
+      if (!userSettings) return res.status(404).send("Settings not found");
+      console.log("got user settings\n");
+      // Create file in DB
+      const status: FileStatus = userSettings.autoSummarizeEnabled ? "processing" : "unprocessed";
+      await FileService.updateOrSaveFileDetails(userId, fileName, type, status);
+      console.log("file created on db\n");
+
+      // Immediately respond to the client
+      res.status(201).send({ message: "File processing started" });
+
+      if (userSettings.autoSummarizeEnabled) {
+        // // Add job to the queue
+        // fileProcessingQueue.add({ file, userId, fileName, type });
+        setTimeout(async () => {
+          await FileService.processFile(file, userId, fileName, type);
+        }, 0);
       }
 
-      if (!text) return res.status(400).send("Faild to parse text");
-
-      // Summarize text
-      const summary = await SummarizeService.summarize(text);
-
-      // Save text as file
-      await saveTextToFile(text, path.join(PUBLIC_PATH, "transcribe", userId, type, fileName));
-      // Save summary as file
-      await saveTextToFile(summary, path.join(PUBLIC_PATH, "summary", userId, type, fileName));
-
-      return res.status(201).send({ text: summary });
     } catch (error) {
       console.log("Summarize error: ", error);
       return res.status(500).send("Internal server error");
