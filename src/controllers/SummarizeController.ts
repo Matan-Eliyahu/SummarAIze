@@ -5,7 +5,6 @@ import FileService from "../services/FileService";
 import SummarizeService from "../services/SummarizeService";
 import { getFileType, saveTextToFile } from "../utils/files";
 import SettingsModel from "../models/SettingsModel";
-import fileProcessingQueue from "../queues/fileProcessingQueue";
 import { FileStatus } from "../models/FileModel";
 
 const PUBLIC_PATH = path.join(__dirname, "..", "..", "public");
@@ -35,7 +34,7 @@ class SummarizeController {
       console.log("got user settings\n");
       // Create file in DB
       const status: FileStatus = userSettings.autoSummarizeEnabled ? "processing" : "unprocessed";
-      await FileService.updateOrSaveFileDetails(userId, fileName, type, status);
+      await FileService.updateFileDetails(userId, fileName, status);
       console.log("file created on db\n");
 
       // Immediately respond to the client

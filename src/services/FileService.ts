@@ -6,20 +6,10 @@ import PdfService from "./PdfService";
 import SummarizeService from "./SummarizeService";
 
 class FileService {
-  async updateOrSaveFileDetails(userId: string, fileName: string, type: FileType, status: FileStatus, transcribe: string = "", summary: string = ""): Promise<void> {
+  async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = ""): Promise<void> {
     const file = await FileModel.findOne({ userId, name: fileName });
 
-    if (!file) {
-      const newFile: IFile = {
-        userId,
-        name: fileName,
-        type,
-        transcribe: "",
-        summary: "",
-        status,
-      };
-      await FileModel.create(newFile);
-    } else {
+    if (file) {
       const updateData: Partial<IFile> = { status };
       if (transcribe) {
         updateData.transcribe = transcribe;
@@ -27,13 +17,15 @@ class FileService {
       if (summary) {
         updateData.summary = summary;
       }
-      await FileModel.updateOne({ userId, name: fileName }, updateData);
+      await FileModel.updateOne({ userId, name: fileName }, { $set: updateData });
+    } else {
+      console.error(`File with name ${fileName} for user ${userId} not found`);
     }
   }
 
   async processFile(file: Express.Multer.File, userId: string, fileName: string, type: FileType): Promise<void> {
     let transcribe: string;
-    console.log("processing file...")
+    console.log(`processing ${file.originalname}...`);
 
     try {
       // Parse to text
@@ -51,14 +43,10 @@ class FileService {
           transcribe = null;
       }
 
-      console.log("done parsing text");
-
       if (!transcribe) throw new Error("Failed to parse text");
 
       // Summarize text
       const summary = await SummarizeService.summarize(transcribe);
-
-      console.log("done summarize text");
 
       // // Save text as file
       // await saveTextToFile(text, path.join(PUBLIC_PATH, "transcribe", userId, type, fileName));
@@ -66,10 +54,12 @@ class FileService {
       // await saveTextToFile(summary, path.join(PUBLIC_PATH, "summary", userId, type, fileName));
 
       // Update file status and details in the database
-      await this.updateOrSaveFileDetails(userId, fileName, type, "completed", transcribe, summary);
+      await this.updateFileDetails(userId, fileName, "completed", transcribe, summary);
+          console.log(`${file.originalname} is done.`);
+
     } catch (error) {
       console.error("File processing error: ", error);
-      await this.updateOrSaveFileDetails(userId, fileName, type, "error");
+      await this.updateFileDetails(userId, fileName, "error");
     }
   }
 }

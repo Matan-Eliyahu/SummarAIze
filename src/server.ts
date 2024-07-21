@@ -6,6 +6,8 @@ import AuthRoute from "./routes/AuthRoute";
 import SummarizeRoute from "./routes/SummarizeRoute";
 import FileRoute from "./routes/FileRoute";
 import SettingsRoute from "./routes/SettingsRoute";
+import UploadRoute from "./routes/UploadRoute";
+import StorageRoute from "./routes/StorageRoute"
 
 function initServer(): Promise<Express> {
   const promise = new Promise<Express>((resolve) => {
@@ -18,9 +20,11 @@ function initServer(): Promise<Express> {
       app.use(express.json());
       app.use(cors());
       app.use("/auth", AuthRoute);
-      app.use("/summarize", SummarizeRoute);
-      app.use("/file", FileRoute);
       app.use("/settings", SettingsRoute);
+      app.use("/upload", UploadRoute);
+      app.use("/file", FileRoute);
+      app.use("/storage", StorageRoute);
+      app.use("/summarize", SummarizeRoute);
       resolve(app);
     });
   });

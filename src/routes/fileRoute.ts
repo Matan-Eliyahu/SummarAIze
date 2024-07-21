@@ -1,8 +1,9 @@
 import express from "express";
+import authMiddleware from "../middleware/authMiddleware";
 import FileController from "../controllers/FileController";
 
 const router = express.Router();
 
-router.get("/:id", FileController.getUserFiles.bind(FileController));
+router.get("/user-files", authMiddleware, FileController.getUserFiles.bind(FileController));
 
 export default router;

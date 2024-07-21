@@ -1,7 +1,7 @@
 import express from "express";
 import SummarizeController from "../controllers/SummarizeController";
-import authMiddleware from "../middleware/auth";
-import upload from "../common/upload";
+import authMiddleware from "../middleware/authMiddleware";
+import upload from "../common/multer";
 
 const router = express.Router();
 

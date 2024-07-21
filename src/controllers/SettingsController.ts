@@ -1,15 +1,16 @@
 import { Request, Response } from "express";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
 import { BaseController } from "./BaseController";
+import { AuthRequest } from "./AuthController";
 
 class SettingsController extends BaseController<ISettings> {
   constructor() {
     super(SettingsModel);
   }
 
-  async getSettingsByUserId(req: Request, res: Response) {
+  async getSettingsByUserId(req: AuthRequest, res: Response) {
     try {
-      const userId = req.params.userId;
+      const userId = req.user._id;
       const settings = await this.model.findOne({ userId });
       if (!settings) {
         return res.status(404).send("Settings not found");
@@ -21,9 +22,9 @@ class SettingsController extends BaseController<ISettings> {
     }
   }
 
-  async updateSettingsByUserId(req: Request, res: Response) {
+  async updateSettingsByUserId(req: AuthRequest, res: Response) {
     try {
-      const userId = req.params.userId;
+      const userId = req.user._id;
       const updatedSettings = await this.model.findOneAndUpdate({ userId }, req.body, { new: true });
       if (!updatedSettings) {
         return res.status(404).send("Settings not found");
