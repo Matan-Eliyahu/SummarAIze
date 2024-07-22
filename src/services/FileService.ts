@@ -4,6 +4,13 @@ import AudioService from "./AudioService";
 import ImageService from "./ImageService";
 import PdfService from "./PdfService";
 import SummarizeService from "./SummarizeService";
+import { clients } from "../server";
+import WebSocket from "ws";
+
+interface IUpdate {
+  fileName: string;
+  status: string;
+}
 
 class FileService {
   async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = ""): Promise<void> {
@@ -25,7 +32,7 @@ class FileService {
 
   async processFile(file: Express.Multer.File, userId: string, fileName: string, type: FileType): Promise<void> {
     let transcribe: string;
-    console.log(`processing ${file.originalname}...`);
+    let status: FileStatus;
 
     try {
       // Parse to text
@@ -48,18 +55,24 @@ class FileService {
       // Summarize text
       const summary = await SummarizeService.summarize(transcribe);
 
-      // // Save text as file
-      // await saveTextToFile(text, path.join(PUBLIC_PATH, "transcribe", userId, type, fileName));
-      // // Save summary as file
-      // await saveTextToFile(summary, path.join(PUBLIC_PATH, "summary", userId, type, fileName));
-
       // Update file status and details in the database
-      await this.updateFileDetails(userId, fileName, "completed", transcribe, summary);
-          console.log(`${file.originalname} is done.`);
+      status = "completed";
+      await this.updateFileDetails(userId, fileName, status, transcribe, summary);
 
     } catch (error) {
+      status = "error";
+      await this.updateFileDetails(userId, fileName, status);
       console.error("File processing error: ", error);
-      await this.updateFileDetails(userId, fileName, "error");
+    } finally {
+      // Send WebSocket update
+      const client = clients.get(userId);
+      if (client && client.readyState === WebSocket.OPEN) {
+        const update: IUpdate = {
+          fileName,
+          status,
+        };
+        client.send(JSON.stringify(update));
+      }
     }
   }
 }

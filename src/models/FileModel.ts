@@ -7,11 +7,13 @@ export interface IFile {
   userId: string;
   name: string;
   type: FileType;
-  size:number;
+  size: number;
+  path:string;
   transcribe: string;
   summary: string;
   status: FileStatus;
-  uploadedAt:Date;
+  uploadedAt: Date;
+  lastOpened?: Date;
 }
 
 const fileSchema = new Schema<IFile & Document>({
@@ -23,6 +25,7 @@ const fileSchema = new Schema<IFile & Document>({
     required: true,
   },
   size: { type: Number, required: true },
+  path: { type: String, required: true },
   transcribe: { type: String, default: "" },
   summary: { type: String, default: "" },
   status: {
@@ -31,6 +34,7 @@ const fileSchema = new Schema<IFile & Document>({
     required: true,
   },
   uploadedAt: { type: Date, required: true },
+  lastOpened: { type: Date },
 });
 
 const FileModel = model<IFile & Document>("File", fileSchema);

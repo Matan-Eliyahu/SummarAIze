@@ -1,18 +1,18 @@
-import multer, { Multer } from 'multer';
-import path from 'path';
-import fs from 'fs';
-import { AuthRequest } from '../controllers/AuthController';
-import { getFileType } from '../utils/files';
+import multer, { Multer } from "multer";
+import path from "path";
+import fs from "fs";
+import { AuthRequest } from "../controllers/AuthController";
+import { getFileType } from "../utils/files";
 
 export const UPLOADS_PATH = path.join(__dirname, "..", "..", "public", "uploads");
 
-const allowedMimeTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'audio/mpeg', 'audio/wav'];
+const allowedMimeTypes = ["application/pdf", "image/jpeg", "image/png", "image/gif", "audio/mpeg", "audio/wav"];
 
 const fileFilter = (req: AuthRequest, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
   if (allowedMimeTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Invalid file type'));
+    cb(new Error("Invalid file type"));
   }
 };
 
@@ -31,6 +31,6 @@ const storage = multer.diskStorage({
   },
 });
 
-const upload: Multer = multer({ storage: storage, fileFilter: fileFilter });
+const upload: Multer = multer({ storage: storage, fileFilter });
 
 export default upload;

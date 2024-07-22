@@ -1,8 +1,8 @@
 import initServer from "./server";
 
-initServer().then((app) => {
+initServer().then(([server]) => {
   const port = process.env.SERVER_PORT;
-  app.listen(port, () => {
+  server.listen(port, () => {
     console.log(`>> Server is running on port ${port}`);
   });
 });

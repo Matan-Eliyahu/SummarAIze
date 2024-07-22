@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Response } from "express";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
 import { BaseController } from "./BaseController";
 import { AuthRequest } from "./AuthController";

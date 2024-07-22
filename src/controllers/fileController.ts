@@ -18,6 +18,20 @@ class FileController extends BaseController<IFile> {
       return res.status(500).send("Internal Server Error");
     }
   }
+
+  async getFileByName(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user._id;
+      const fileName = req.params.fileName;
+      const file = await this.model.findOne({ userId, name: fileName });
+      file.lastOpened = new Date();
+      await file.save();
+      return res.status(200).send(file);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send("Internal Server Error");
+    }
+  }
 }
 
 export default new FileController();
