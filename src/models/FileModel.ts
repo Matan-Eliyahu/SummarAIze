@@ -8,9 +8,11 @@ export interface IFile {
   name: string;
   type: FileType;
   size: number;
-  path:string;
+  path: string;
   transcribe: string;
   summary: string;
+  title: string;
+  keywords: string[];
   status: FileStatus;
   uploadedAt: Date;
   lastOpened?: Date;
@@ -28,6 +30,8 @@ const fileSchema = new Schema<IFile & Document>({
   path: { type: String, required: true },
   transcribe: { type: String, default: "" },
   summary: { type: String, default: "" },
+  title: { type: String, default: "" },
+  keywords: { type: [String], default: [] },
   status: {
     type: String,
     enum: ["completed", "processing", "error", "unprocessed"],
