@@ -18,24 +18,28 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
     if (!userSettings) return res.status(400).send("Settings not found");
     const autoSummarize = userSettings.autoSummarizeEnabled;
 
-    const fileInfos: IFile[] = files.map((file) => {
-      const name = file.originalname;
+    let fileName: string;
+    let fileNames: string[] = [];
+    const fileInfos: IFile[] = [];
+    for (const file of files) {
+      fileName = await FileService.generateUniqueFileName(userId, file.originalname);
+      fileNames.push(fileName);
       const type = getFileType(file.mimetype);
       const size = +(file.size / (1024 * 1024)).toFixed(2);
       const status = autoSummarize ? "processing" : "unprocessed";
-      const filePath = path.join(userId, type, name);
-      const dbFile: IFile = { userId, name, type, size, status, path: filePath, transcribe: "", summary: "", uploadedAt: new Date() };
-      return dbFile;
-    });
+      const filePath = path.join(userId, type, fileName);
+      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", uploadedAt: new Date() };
+      fileInfos.push(ifile);
+    }
 
     await FileModel.insertMany(fileInfos); // Save files info to the database
 
     res.status(201).send("Files uploaded and info saved");
 
     if (autoSummarize) {
-      files.forEach((file) => {
+      files.forEach((file, index) => {
         setTimeout(async () => {
-          await FileService.processFile(file, userId, file.originalname, getFileType(file.mimetype));
+          await FileService.processFile(file, userId, fileNames[index], getFileType(file.mimetype));
         }, 0);
       });
     }

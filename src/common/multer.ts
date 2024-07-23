@@ -3,6 +3,7 @@ import path from "path";
 import fs from "fs";
 import { AuthRequest } from "../controllers/AuthController";
 import { getFileType } from "../utils/files";
+import FileService from "../services/FileService";
 
 export const UPLOADS_PATH = path.join(__dirname, "..", "..", "public", "uploads");
 
@@ -17,8 +18,8 @@ const fileFilter = (req: AuthRequest, file: Express.Multer.File, cb: multer.File
 };
 
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    const userId = (req as AuthRequest).user._id;
+  destination: function (req: AuthRequest, file: Express.Multer.File, cb) {
+    const userId = req.user._id;
     const type = getFileType(file.mimetype);
     const destinationPath = path.join(UPLOADS_PATH, userId, type);
     if (!fs.existsSync(destinationPath)) {
@@ -26,8 +27,14 @@ const storage = multer.diskStorage({
     }
     cb(null, destinationPath);
   },
-  filename: function (req, file, cb) {
-    cb(null, file.originalname);
+  filename: async function (req: AuthRequest, file: Express.Multer.File, cb) {
+    const userId = req.user._id;
+    try {
+      const uniqueFileName = await FileService.generateUniqueFileName(userId, file.originalname);
+      cb(null, uniqueFileName);
+    } catch (error) {
+      cb(error, file.originalname);
+    }
   },
 });
 

@@ -26,7 +26,7 @@ function initServer() {
       app.use("/auth", AuthRoute);
       app.use("/settings", SettingsRoute);
       app.use("/upload", UploadRoute);
-      app.use("/file", FileRoute);
+      app.use("/files", FileRoute);
       app.use("/storage", StorageRoute);
       app.use("/", UploadsStaticRoute); // Static
 

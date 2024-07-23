@@ -1,4 +1,5 @@
 import { FileType } from "../common/types";
+import path from "path";
 import FileModel, { FileStatus, IFile } from "../models/FileModel";
 import AudioService from "./AudioService";
 import ImageService from "./ImageService";
@@ -34,6 +35,8 @@ class FileService {
     let transcribe: string;
     let status: FileStatus;
 
+    console.log(`processing ${fileName}...`);
+
     try {
       // Parse to text
       switch (type) {
@@ -51,14 +54,18 @@ class FileService {
       }
 
       if (!transcribe) throw new Error("Failed to parse text");
+      transcribe = transcribe.trim().replace("\n", " ");
+
+      console.log(`done parsing text from ${fileName}`);
 
       // Summarize text
       const summary = await SummarizeService.summarize(transcribe);
 
+      console.log(`${fileName} done.\n`);
+
       // Update file status and details in the database
       status = "completed";
       await this.updateFileDetails(userId, fileName, status, transcribe, summary);
-
     } catch (error) {
       status = "error";
       await this.updateFileDetails(userId, fileName, status);
@@ -74,6 +81,20 @@ class FileService {
         client.send(JSON.stringify(update));
       }
     }
+  }
+
+  async generateUniqueFileName(userId: string, originalName: string): Promise<string> {
+    const baseName = path.basename(originalName, path.extname(originalName));
+    const extension = path.extname(originalName);
+    let fileName = originalName;
+    let counter = 1;
+
+    while (await FileModel.findOne({ userId, name: fileName })) {
+      fileName = `${baseName}(${counter})${extension}`;
+      counter++;
+    }
+
+    return fileName;
   }
 }
 

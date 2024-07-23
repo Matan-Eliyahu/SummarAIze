@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@google-cloud/vision": "^4.2.1",
+    "@google/generative-ai": "^0.15.0",
     "@types/mongoose": "^5.11.97",
     "assemblyai": "^4.4.2",
     "axios": "^1.7.2",
