@@ -28,7 +28,7 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
       const size = +(file.size / (1024 * 1024)).toFixed(2);
       const status = autoSummarize ? "processing" : "unprocessed";
       const filePath = path.join(userId, type, fileName);
-      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", uploadedAt: new Date() };
+      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date() };
       fileInfos.push(ifile);
     }
 

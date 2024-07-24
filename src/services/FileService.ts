@@ -14,7 +14,7 @@ interface IUpdate {
 }
 
 class FileService {
-  async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = ""): Promise<void> {
+  async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = "", title: string = "", keywords: string[] = []): Promise<void> {
     const file = await FileModel.findOne({ userId, name: fileName });
 
     if (file) {
@@ -24,6 +24,12 @@ class FileService {
       }
       if (summary) {
         updateData.summary = summary;
+      }
+      if (title) {
+        updateData.title = title;
+      }
+      if (keywords) {
+        updateData.keywords = keywords;
       }
       await FileModel.updateOne({ userId, name: fileName }, { $set: updateData });
     } else {
@@ -54,18 +60,20 @@ class FileService {
       }
 
       if (!transcribe) throw new Error("Failed to parse text");
-      transcribe = transcribe.trim().replace("\n", " ");
+      transcribe = transcribe.trim();
 
       console.log(`done parsing text from ${fileName}`);
 
       // Summarize text
       const summary = await SummarizeService.summarize(transcribe);
 
+      const { keywords, title } = await SummarizeService.extractKeywordsAndTitle(transcribe);
+
       console.log(`${fileName} done.\n`);
 
       // Update file status and details in the database
       status = "completed";
-      await this.updateFileDetails(userId, fileName, status, transcribe, summary);
+      await this.updateFileDetails(userId, fileName, status, transcribe, summary, title, keywords);
     } catch (error) {
       status = "error";
       await this.updateFileDetails(userId, fileName, status);
