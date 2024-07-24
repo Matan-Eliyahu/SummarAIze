@@ -12,9 +12,15 @@ class FileController extends BaseController<IFile> {
   }
 
   async getUserFiles(req: AuthRequest, res: Response) {
+    const query = req.query.query as string;
     try {
       const userId = req.user._id;
       const files = await this.model.find({ userId });
+      if (query) {
+        const lowerCaseQuery = query.toLowerCase();
+        const filteredFiles = files.filter((file) => file.name.toLowerCase().includes(lowerCaseQuery) || file.title.toLowerCase().includes(lowerCaseQuery) || file.keywords.find((keyword) => keyword.toLowerCase().includes(lowerCaseQuery)));
+        return res.status(200).send(filteredFiles);
+      }
       return res.status(200).send(files);
     } catch (err) {
       console.error(err);
@@ -52,7 +58,40 @@ class FileController extends BaseController<IFile> {
       }
       await this.model.deleteOne({ userId, name: fileName });
 
-      return res.status(200).send("File deleted successfully");
+      return res.status(200);
+    } catch (err) {
+      console.error(err);
+      return res.status(500).send("Internal Server Error");
+    }
+  }
+
+  async deleteFilesByName(req: AuthRequest, res: Response) {
+    const userId = req.user._id;
+    const { fileNames } = req.body;
+    try {
+      if (!Array.isArray(fileNames) || fileNames.length === 0) {
+        return res.status(400).send("No file names provided");
+      }
+
+      const deleteResults = await Promise.all(
+        fileNames.map(async (fileName) => {
+          const file = await this.model.findOne({ userId, name: fileName });
+          if (!file) {
+            return { fileName, status: "not_found" };
+          }
+
+          const filePath = path.join(UPLOADS_PATH, file.path);
+          if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+          } else {
+            console.warn(`File ${filePath} does not exist`);
+          }
+          await this.model.deleteOne({ userId, name: fileName });
+          return { fileName, status: "deleted" };
+        })
+      );
+
+      return res.status(200).send(deleteResults);
     } catch (err) {
       console.error(err);
       return res.status(500).send("Internal Server Error");

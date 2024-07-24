@@ -15,7 +15,7 @@ class SummarizeService {
   }
 
   private generateSummarizePrompt(text: string): string {
-    const prompt = `summarize this text with paragraphs no titles, text only${text}`;
+    const prompt = `Could you summarize this text with paragraphs and no titles, text only - ${text}`;
     return prompt;
   }
 
@@ -32,9 +32,9 @@ class SummarizeService {
 
     try {
       const result = await model.generateContent(prompt);
-      const textResponse = await result.response.text();
+      const textResponse = result.response.text();
 
-      console.log(textResponse);
+      // console.log(textResponse);
 
       // Extract title and keywords from the response text
       const titleMatch = textResponse.match(/^Title:\s*(.+?)\s*$/m);

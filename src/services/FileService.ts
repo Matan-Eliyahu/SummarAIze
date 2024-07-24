@@ -59,15 +59,19 @@ class FileService {
           transcribe = null;
       }
 
-      if (!transcribe) throw new Error("Failed to parse text");
-      transcribe = transcribe.trim();
+      if (!transcribe) {
+        status = "error";
+        throw new Error("Failed to parse text");
+      }
 
       console.log(`done parsing text from ${fileName}`);
 
       // Summarize text
-      const summary = await SummarizeService.summarize(transcribe);
+      let summary = await SummarizeService.summarize(transcribe);
 
       const { keywords, title } = await SummarizeService.extractKeywordsAndTitle(transcribe);
+      transcribe = transcribe.trim();
+      summary = summary.trim();
 
       console.log(`${fileName} done.\n`);
 
