@@ -33,7 +33,7 @@ class SummarizeController {
       if (!userSettings) return res.status(404).send("Settings not found");
       console.log("got user settings\n");
       // Create file in DB
-      const status: FileStatus = userSettings.autoSummarizeEnabled ? "processing" : "unprocessed";
+      const status: FileStatus = userSettings.autoSummarizeEnabled ? "processing" : "not-summarized";
       await FileService.updateFileDetails(userId, fileName, status);
       console.log("file created on db\n");
 

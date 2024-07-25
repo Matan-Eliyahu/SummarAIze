@@ -13,11 +13,7 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
 
   const files = req.files as Express.Multer.File[];
   const userId = req.user._id;
-  try {
-    const userSettings: ISettings = await SettingsModel.findOne({ userId }); // Get user settings
-    if (!userSettings) return res.status(400).send("Settings not found");
-    const autoSummarize = userSettings.autoSummarizeEnabled;
-
+  try { 
     let fileName: string;
     let fileNames: string[] = [];
     const fileInfos: IFile[] = [];
@@ -26,7 +22,7 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
       fileNames.push(fileName);
       const type = getFileType(file.mimetype);
       const size = +(file.size / (1024 * 1024)).toFixed(2);
-      const status = autoSummarize ? "processing" : "unprocessed";
+      const status = "processing";
       const filePath = path.join(userId, type, fileName);
       const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date() };
       fileInfos.push(ifile);
@@ -36,13 +32,12 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
 
     res.status(201).send("Files uploaded and info saved");
 
-    if (autoSummarize) {
-      files.forEach((file, index) => {
-        setTimeout(async () => {
-          await FileService.processFile(file, userId, fileNames[index], getFileType(file.mimetype));
-        }, 0);
-      });
-    }
+    files.forEach((file, index) => {
+      setTimeout(async () => {
+        await FileService.processFile(file, userId, fileNames[index], getFileType(file.mimetype));
+      }, 0);
+    });
+
   } catch (error) {
     console.error("Error saving file info: ", error);
     return res.status(500).send("Internal server error");

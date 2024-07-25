@@ -1,7 +1,7 @@
 import { Document, Schema, model } from "mongoose";
 import { FileType } from "../common/types";
 
-export type FileStatus = "completed" | "processing" | "error" | "unprocessed";
+export type FileStatus = "completed" | "processing" | "error" | "not-summarized";
 
 export interface IFile {
   userId: string;
@@ -34,7 +34,7 @@ const fileSchema = new Schema<IFile & Document>({
   keywords: { type: [String], default: [] },
   status: {
     type: String,
-    enum: ["completed", "processing", "error", "unprocessed"],
+    enum: ["completed", "processing", "error", "not-summarized"],
     required: true,
   },
   uploadedAt: { type: Date, required: true },

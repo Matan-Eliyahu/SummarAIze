@@ -7,6 +7,7 @@ import PdfService from "./PdfService";
 import SummarizeService from "./SummarizeService";
 import { clients } from "../server";
 import WebSocket from "ws";
+import SettingsModel, { ISettings } from "../models/SettingsModel";
 
 interface IUpdate {
   fileName: string;
@@ -14,7 +15,7 @@ interface IUpdate {
 }
 
 class FileService {
-  async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = "", title: string = "", keywords: string[] = []): Promise<void> {
+  async updateFileDetails(userId: string, fileName: string, status: FileStatus, transcribe: string = "", summary: string = "", additionalInfo?: { keywords: string[]; title: string }): Promise<void> {
     const file = await FileModel.findOne({ userId, name: fileName });
 
     if (file) {
@@ -25,11 +26,14 @@ class FileService {
       if (summary) {
         updateData.summary = summary;
       }
-      if (title) {
-        updateData.title = title;
-      }
-      if (keywords) {
-        updateData.keywords = keywords;
+      if (additionalInfo) {
+        const { keywords, title } = additionalInfo;
+        if (title) {
+          updateData.title = title;
+        }
+        if (keywords) {
+          updateData.keywords = keywords;
+        }
       }
       await FileModel.updateOne({ userId, name: fileName }, { $set: updateData });
     } else {
@@ -39,11 +43,18 @@ class FileService {
 
   async processFile(file: Express.Multer.File, userId: string, fileName: string, type: FileType): Promise<void> {
     let transcribe: string;
+    let summary: string;
+    let additionalInfo: { keywords: string[]; title: string };
     let status: FileStatus;
 
     console.log(`processing ${fileName}...`);
 
     try {
+      // Get user settings
+      const userSettings: ISettings = await SettingsModel.findOne({ userId }); // Get user settings
+      if (!userSettings) throw new Error("Settings not found");
+      const autoSummarize = userSettings.autoSummarizeEnabled;
+
       // Parse to text
       switch (type) {
         case "image":
@@ -63,21 +74,25 @@ class FileService {
         status = "error";
         throw new Error("Failed to parse text");
       }
+      status = "not-summarized";
 
       console.log(`done parsing text from ${fileName}`);
 
-      // Summarize text
-      let summary = await SummarizeService.summarize(transcribe);
+      if (autoSummarize) {
+        // Summarize text
+        summary = await SummarizeService.summarize(transcribe);
 
-      const { keywords, title } = await SummarizeService.extractKeywordsAndTitle(transcribe);
-      transcribe = transcribe.trim();
-      summary = summary.trim();
+        additionalInfo = await SummarizeService.extractKeywordsAndTitle(transcribe);
+        transcribe = transcribe.trim();
+        summary = summary.trim();
+
+        status = "completed";
+      }
 
       console.log(`${fileName} done.\n`);
 
       // Update file status and details in the database
-      status = "completed";
-      await this.updateFileDetails(userId, fileName, status, transcribe, summary, title, keywords);
+      await this.updateFileDetails(userId, fileName, status, transcribe, summary, additionalInfo);
     } catch (error) {
       status = "error";
       await this.updateFileDetails(userId, fileName, status);
