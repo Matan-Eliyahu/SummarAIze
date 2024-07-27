@@ -5,8 +5,13 @@ const aiModel = process.env.GEMINI_MODEL;
 const genAI = new GoogleGenerativeAI(apiKey);
 const model = genAI.getGenerativeModel({ model: aiModel });
 
+export interface ISummaryOptions {
+  length: "short" | "medium" | "long";
+  language: "auto";
+}
+
 class SummarizeService {
-  async summarize(text: string, adjustment?: string): Promise<string> {
+  async summarize(text: string, options?: ISummaryOptions): Promise<string> {
     const prompt = this.generateSummarizePrompt(text);
     const result = await model.generateContent(prompt);
     const textResponse = result.response.text();
