@@ -5,6 +5,7 @@ import UserModel, { IUser } from "../models/UserModel";
 import { Document } from "mongoose";
 import axios from "axios";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
+import { PlanType } from "../common/types";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -14,8 +15,10 @@ const GOOGLE_USER_INFO_URL = process.env.GOOGLE_USER_INFO_URL;
 export interface AuthRequest extends Request {
   user?: { _id: string };
 }
+
 export interface IAuth {
-  id: string;
+  userId: string;
+  plan: PlanType;
   fullName: string;
   email: string;
   imageUrl: string;
@@ -64,9 +67,10 @@ async function setupUser(userData: IUser) {
     const defaultSettings: ISettings = {
       userId: user._id,
       allowedFileTypes: ["pdf", "image", "audio"],
-      autoSummarizeEnabled: false,
+      autoSummarizeEnabled: true,
       smartSearchEnabled: true,
       clearFilesAfterDays: 90,
+      defaultFileView: "icons",
     };
     await SettingsModel.create(defaultSettings);
     return user;
@@ -111,8 +115,9 @@ async function login(req: Request, res: Response) {
 
     const tokens = await generateTokens(user);
     const auth: IAuth = {
-      id: user._id,
+      userId: user._id,
       fullName: user.fullName,
+      plan: user.plan,
       email: user.email,
       imageUrl: user.imageUrl,
       tokens,
@@ -136,6 +141,7 @@ async function googleSignin(req: Request, res: Response) {
       const newGoogleUser: IUser = {
         fullName: given_name + " " + family_name,
         email,
+        plan: "none",
         password: "googlegoogle",
         imageUrl: picture,
       };
@@ -143,7 +149,8 @@ async function googleSignin(req: Request, res: Response) {
     }
     const tokens = await generateTokens(user);
     const auth: IAuth = {
-      id: user._id,
+      userId: user._id,
+      plan: user.plan,
       fullName: user.fullName,
       email: user.email,
       imageUrl: user.imageUrl,
@@ -216,8 +223,9 @@ async function refreshToken(req: Request, res: Response) {
         refreshToken: newRefreshToken,
       };
       const newAuth: IAuth = {
-        id: user._id,
+        userId: user._id,
         fullName: user.fullName,
+        plan: user.plan,
         email: user.email,
         imageUrl: user.imageUrl,
         tokens,

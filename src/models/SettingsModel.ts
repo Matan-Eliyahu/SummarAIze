@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { FileType } from "../common/types";
+import { FileListView, FileType } from "../common/types";
 
 export interface ISettings {
   userId: string;
@@ -7,11 +7,13 @@ export interface ISettings {
   autoSummarizeEnabled: boolean;
   smartSearchEnabled: boolean;
   clearFilesAfterDays: 0 | 30 | 60 | 90;
+  defaultFileView: FileListView;
 }
 
 const allowedClearFileDays = [0, 30, 60, 90];
 
-const settingsSchema = new Schema<ISettings>({
+const settingsSchema = new Schema<ISettings>(
+  {
     userId: { type: String, ref: "User", required: true },
     allowedFileTypes: { type: [String], enum: ["pdf", "image", "audio"], required: true },
     autoSummarizeEnabled: { type: Boolean, default: false },
@@ -26,10 +28,16 @@ const settingsSchema = new Schema<ISettings>({
         message: (props: { value: number }) => `${props.value} is not a valid option for clearFilesAfterDays`,
       },
     },
+    defaultFileView: {
+      type: String,
+      enum: ["icons", "list"],
+      required: true,
+    },
   },
   {
     timestamps: true,
-});
+  }
+);
 
 const SettingsModel = model<ISettings & Document>("Settings", settingsSchema);
 

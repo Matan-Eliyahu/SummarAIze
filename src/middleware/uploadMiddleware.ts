@@ -2,7 +2,6 @@ import { Response } from "express";
 import path from "path";
 import FileModel, { IFile } from "../models/FileModel";
 import { AuthRequest } from "../controllers/AuthController";
-import SettingsModel, { ISettings } from "../models/SettingsModel";
 import { getFileType } from "../utils/files";
 import FileService from "../services/FileService";
 

@@ -1,9 +1,11 @@
 import { Document, Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
+import { PlanType } from "../common/types";
 
 export interface IUser {
   fullName: string;
   email: string;
+  plan: PlanType;
   password: string;
   imageUrl: string;
   refreshTokens?: string[];
@@ -11,9 +13,10 @@ export interface IUser {
 
 const userSchema = new Schema<IUser & Document>({
   fullName: { type: String, required: [true, "Please provide full name"] },
+  plan: { type: String, enum: ["basic", "pro", "premium", "none"], required: true },
   email: { type: String, required: [true, "Please provide your email"], unique: true },
   password: { type: String, required: [true, "Please provide password"], minlength: 8 },
-  imageUrl: { type: String, default:"" },
+  imageUrl: { type: String, default: "" },
   refreshTokens: { type: [String], required: false },
 });
 

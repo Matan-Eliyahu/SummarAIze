@@ -9,6 +9,7 @@ import FileRoute from "./routes/FileRoute";
 import SettingsRoute from "./routes/SettingsRoute";
 import UploadRoute from "./routes/UploadRoute";
 import StorageRoute from "./routes/StorageRoute";
+import UserRoute from "./routes/UserRoute"
 import UploadsStaticRoute from "./routes/UploadsStaticRoute";
 
 export const clients = new Map<string, WebSocket>();
@@ -28,6 +29,7 @@ function initServer() {
       app.use("/upload", UploadRoute);
       app.use("/files", FileRoute);
       app.use("/storage", StorageRoute);
+      app.use("/users", UserRoute);
       app.use("/", UploadsStaticRoute); // Static
 
       const server = http.createServer(app);
