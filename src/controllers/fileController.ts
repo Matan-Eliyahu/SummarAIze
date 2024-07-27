@@ -58,7 +58,7 @@ class FileController extends BaseController<IFile> {
       }
       await this.model.deleteOne({ userId, name: fileName });
 
-      return res.status(200);
+      return res.status(204).send();
     } catch (err) {
       console.error(err);
       return res.status(500).send("Internal Server Error");
