@@ -9,6 +9,7 @@ export interface IUser {
   password: string;
   imageUrl: string;
   refreshTokens?: string[];
+  _id?: string;
 }
 
 const userSchema = new Schema<IUser & Document>({

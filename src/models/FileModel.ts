@@ -16,6 +16,7 @@ export interface IFile {
   status: FileStatus;
   uploadedAt: Date;
   lastOpened?: Date;
+  _id?: string;
 }
 
 const fileSchema = new Schema<IFile & Document>({

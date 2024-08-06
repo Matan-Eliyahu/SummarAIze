@@ -71,6 +71,13 @@ async function setupUser(userData: IUser) {
       smartSearchEnabled: true,
       clearFilesAfterDays: 90,
       defaultFileView: "icons",
+      summaryOptions: {
+        length: "medium",
+        language: "auto",
+        tone: "neutral",
+        detailLevel: "medium",
+        keywords: [],
+      },
     };
     await SettingsModel.create(defaultSettings);
     return user;

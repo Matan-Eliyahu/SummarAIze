@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
+import { Language } from "../common/types";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const aiModel = process.env.GEMINI_MODEL;
@@ -7,20 +8,48 @@ const model = genAI.getGenerativeModel({ model: aiModel });
 
 export interface ISummaryOptions {
   length: "short" | "medium" | "long";
-  language: "auto";
+  language: Language;
+  tone: "formal" | "informal" | "neutral";
+  detailLevel: "high" | "medium" | "low";
+  keywords: string[];
 }
 
 class SummarizeService {
-  async summarize(text: string, options?: ISummaryOptions): Promise<string> {
-    const prompt = this.generateSummarizePrompt(text);
+  async summarize(text: string, options: ISummaryOptions): Promise<string> {
+    const prompt = this.generateSummarizePrompt(text,options);
     const result = await model.generateContent(prompt);
     const textResponse = result.response.text();
 
     return textResponse.trim();
   }
 
-  private generateSummarizePrompt(text: string): string {
-    const prompt = `Could you summarize this text with paragraphs and no titles, text only - ${text}`;
+  private generateSummarizePrompt(text: string, options: ISummaryOptions): string {
+    const { length, language, tone, detailLevel, keywords } = options;
+
+    let prompt = `Could you summarize this text with paragraphs and no titles, text only. `;
+
+    // Add length to the prompt
+    prompt += `Summary length should be ${length}. `;
+
+    // Add language to the prompt
+    if (language !== "auto") {
+      prompt += `The summary should be in ${language}. `;
+    }
+
+    // Add tone to the prompt
+    prompt += `The tone should be ${tone}. `;
+
+    // Add detail level to the prompt
+    prompt += `Detail level should be ${detailLevel}. `;
+
+    // Add keywords to the prompt if there are any
+    if (keywords.length > 0) {
+      prompt += `Focus on the following keywords: ${keywords.join(", ")}. `;
+    }
+
+    // Append the actual text
+    prompt += `Here is the text: ${text}`;
+
     return prompt;
   }
 

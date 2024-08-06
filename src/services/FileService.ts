@@ -54,6 +54,7 @@ class FileService {
       const userSettings: ISettings = await SettingsModel.findOne({ userId }); // Get user settings
       if (!userSettings) throw new Error("Settings not found");
       const autoSummarize = userSettings.autoSummarizeEnabled;
+      const summaryOptions = userSettings.summaryOptions;
 
       // Parse to text
       switch (type) {
@@ -80,7 +81,7 @@ class FileService {
 
       if (autoSummarize) {
         // Summarize text
-        summary = await SummarizeService.summarize(transcribe);
+        summary = await SummarizeService.summarize(transcribe, summaryOptions);
 
         additionalInfo = await SummarizeService.extractKeywordsAndTitle(transcribe);
         transcribe = transcribe.trim();

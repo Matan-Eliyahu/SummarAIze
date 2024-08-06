@@ -44,3 +44,5 @@ export const PLANS: Record<PlanType, IPlan | null> = {
   },
   none: null,
 };
+
+export type Language = "auto" | "english" | "spanish" | "french" | "german" | "chinese" | "japanese" | "korean" | "russian" | "arabic" | "portuguese" | "italian" | "hindi" | "bengali";
