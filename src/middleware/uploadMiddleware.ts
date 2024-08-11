@@ -4,6 +4,7 @@ import FileModel, { IFile } from "../models/FileModel";
 import { AuthRequest } from "../controllers/AuthController";
 import { getFileType } from "../utils/files";
 import FileService from "../services/FileService";
+import SettingsModel, { ISettings } from "../models/SettingsModel";
 
 async function saveFilesInfo(req: AuthRequest, res: Response) {
   if (!req.files) {
@@ -12,10 +13,11 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
 
   const files = req.files as Express.Multer.File[];
   const userId = req.user._id;
-  try { 
+  try {
     let fileName: string;
     let fileNames: string[] = [];
     const fileInfos: IFile[] = [];
+    const userSettings: ISettings = await SettingsModel.findOne({ userId });
     for (const file of files) {
       fileName = await FileService.generateUniqueFileName(userId, file.originalname);
       fileNames.push(fileName);
@@ -23,7 +25,7 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
       const size = +(file.size / (1024 * 1024)).toFixed(2);
       const status = "processing";
       const filePath = path.join(userId, type, fileName);
-      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date() };
+      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date(), summaryOptions: userSettings.summaryOptions };
       fileInfos.push(ifile);
     }
 
@@ -36,7 +38,6 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
         await FileService.processFile(file, userId, fileNames[index], getFileType(file.mimetype));
       }, 0);
     });
-
   } catch (error) {
     console.error("Error saving file info: ", error);
     return res.status(500).send("Internal server error");

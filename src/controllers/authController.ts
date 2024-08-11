@@ -18,10 +18,7 @@ export interface AuthRequest extends Request {
 
 export interface IAuth {
   userId: string;
-  plan: PlanType;
-  fullName: string;
-  email: string;
-  imageUrl: string;
+  isInitial: boolean;
   tokens: ITokens;
 }
 
@@ -71,6 +68,7 @@ async function setupUser(userData: IUser) {
       smartSearchEnabled: true,
       clearFilesAfterDays: 90,
       defaultFileView: "icons",
+      defaultSummaryTheme: "light",
       summaryOptions: {
         length: "medium",
         language: "auto",
@@ -123,10 +121,7 @@ async function login(req: Request, res: Response) {
     const tokens = await generateTokens(user);
     const auth: IAuth = {
       userId: user._id,
-      fullName: user.fullName,
-      plan: user.plan,
-      email: user.email,
-      imageUrl: user.imageUrl,
+      isInitial: user.plan !== "none",
       tokens,
     };
     return res.status(200).send(auth);
@@ -157,10 +152,7 @@ async function googleSignin(req: Request, res: Response) {
     const tokens = await generateTokens(user);
     const auth: IAuth = {
       userId: user._id,
-      plan: user.plan,
-      fullName: user.fullName,
-      email: user.email,
-      imageUrl: user.imageUrl,
+      isInitial: user.plan !== "none",
       tokens,
     };
     res.status(200).send(auth);
@@ -231,10 +223,7 @@ async function refreshToken(req: Request, res: Response) {
       };
       const newAuth: IAuth = {
         userId: user._id,
-        fullName: user.fullName,
-        plan: user.plan,
-        email: user.email,
-        imageUrl: user.imageUrl,
+        isInitial: user.plan !== "none",
         tokens,
       };
       return res.status(200).send(newAuth);

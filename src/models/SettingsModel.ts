@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import { FileListView, FileType } from "../common/types";
+import { FileListView, FileType, Theme } from "../common/types";
 import { ISummaryOptions } from "../services/SummarizeService";
 
 export interface ISettings {
@@ -9,6 +9,7 @@ export interface ISettings {
   smartSearchEnabled: boolean;
   clearFilesAfterDays: 0 | 30 | 60 | 90;
   defaultFileView: FileListView;
+  defaultSummaryTheme: Theme;
   summaryOptions: ISummaryOptions;
   _id?: string;
 }
@@ -42,6 +43,11 @@ const settingsSchema = new Schema<ISettings>(
     defaultFileView: {
       type: String,
       enum: ["icons", "list"],
+      required: true,
+    },
+    defaultSummaryTheme: {
+      type: String,
+      enum: ["light", "dark"],
       required: true,
     },
     summaryOptions: { type: summaryOptionsSchema, required: true },

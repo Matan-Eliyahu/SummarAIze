@@ -47,8 +47,6 @@ class FileService {
     let additionalInfo: { keywords: string[]; title: string };
     let status: FileStatus;
 
-    console.log(`processing ${fileName}...`);
-
     try {
       // Get user settings
       const userSettings: ISettings = await SettingsModel.findOne({ userId }); // Get user settings
@@ -77,8 +75,6 @@ class FileService {
       }
       status = "not-summarized";
 
-      console.log(`done parsing text from ${fileName}`);
-
       if (autoSummarize) {
         // Summarize text
         summary = await SummarizeService.summarize(transcribe, summaryOptions);
@@ -89,8 +85,6 @@ class FileService {
 
         status = "completed";
       }
-
-      console.log(`${fileName} done.\n`);
 
       // Update file status and details in the database
       await this.updateFileDetails(userId, fileName, status, transcribe, summary, additionalInfo);

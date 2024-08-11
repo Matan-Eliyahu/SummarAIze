@@ -1,16 +1,14 @@
 import { Document, Schema, model } from "mongoose";
 import { FileType } from "../common/types";
+import { ISummaryOptions } from "../services/SummarizeService";
 
 export type FileStatus = "completed" | "processing" | "error" | "not-summarized";
 
-export interface IFile {
+export interface IFileInfo {
   userId: string;
   name: string;
   type: FileType;
   size: number;
-  path: string;
-  transcribe: string;
-  summary: string;
   title: string;
   keywords: string[];
   status: FileStatus;
@@ -18,6 +16,21 @@ export interface IFile {
   lastOpened?: Date;
   _id?: string;
 }
+
+export interface IFile extends IFileInfo {
+  path: string;
+  transcribe: string;
+  summary: string;
+  summaryOptions: ISummaryOptions;
+}
+
+const summaryOptionsSchema = new Schema<ISummaryOptions>({
+  length: { type: String, enum: ["short", "medium", "long"], required: true },
+  language: { type: String, enum: ["auto", "english", "spanish", "french", "german", "chinese", "japanese", "korean", "russian", "arabic", "portuguese", "italian", "hindi", "bengali","hebrew"], required: true },
+  tone: { type: String, enum: ["formal", "informal", "neutral"], required: true },
+  detailLevel: { type: String, enum: ["high", "medium", "low"], required: true },
+  keywords: { type: [String], required: true },
+});
 
 const fileSchema = new Schema<IFile & Document>({
   userId: { type: String, ref: "User", required: true },
@@ -38,6 +51,7 @@ const fileSchema = new Schema<IFile & Document>({
     enum: ["completed", "processing", "error", "not-summarized"],
     required: true,
   },
+  summaryOptions: { type: summaryOptionsSchema, required: true },
   uploadedAt: { type: Date, required: true },
   lastOpened: { type: Date },
 });

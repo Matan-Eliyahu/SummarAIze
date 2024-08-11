@@ -2,14 +2,17 @@ import { Document, Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { PlanType } from "../common/types";
 
-export interface IUser {
+export interface IAccount {
   fullName: string;
   email: string;
   plan: PlanType;
-  password: string;
   imageUrl: string;
-  refreshTokens?: string[];
   _id?: string;
+}
+
+export interface IUser extends IAccount {
+  password: string;
+  refreshTokens?: string[];
 }
 
 const userSchema = new Schema<IUser & Document>({

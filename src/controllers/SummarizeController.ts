@@ -1,6 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "./AuthController";
-import FileModel from "../models/FileModel";
+import FileModel, { IFile } from "../models/FileModel";
 import SummarizeService from "../services/SummarizeService";
 
 class SummarizeController {
@@ -15,9 +15,10 @@ class SummarizeController {
       }
       const summary = await SummarizeService.summarize(file.transcribe, summaryOptions);
       file.summary = summary;
+      file.summaryOptions = summaryOptions;
       await file.save();
 
-      return res.status(200).send(file);
+      return res.status(200).send(file as IFile);
     } catch (error) {
       console.error("Error summarizing:", error);
       return res.status(500).send("Internal server error.");

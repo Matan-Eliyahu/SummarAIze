@@ -1,10 +1,11 @@
 import express from "express";
 import authMiddleware from "../middleware/authMiddleware";
-import upload from "../common/multer";
+import upload, { returnPictureUrl } from "../common/multer";
 import saveFilesInfo from "../middleware/uploadMiddleware";
 
 const router = express.Router();
 
-router.post("/", authMiddleware, upload.array("files", 10), saveFilesInfo);
+router.post("/files", authMiddleware, upload.array("files", 10), saveFilesInfo);
+router.post("/profile-picture", upload.single("profile-picture"), returnPictureUrl);
 
 export default router;

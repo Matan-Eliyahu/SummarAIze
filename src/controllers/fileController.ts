@@ -15,7 +15,7 @@ class FileController extends BaseController<IFile> {
     const query = req.query.query as string;
     try {
       const userId = req.user._id;
-      const files = await this.model.find({ userId });
+      const files = await this.model.find({ userId }).select("-path -transcribe -summary").lean();
       if (query) {
         const lowerCaseQuery = query.toLowerCase();
         const filteredFiles = files.filter((file) => file.name.toLowerCase().includes(lowerCaseQuery) || file.title.toLowerCase().includes(lowerCaseQuery) || file.keywords.find((keyword) => keyword.toLowerCase().includes(lowerCaseQuery)));
