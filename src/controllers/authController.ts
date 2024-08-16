@@ -5,7 +5,6 @@ import UserModel, { IUser } from "../models/UserModel";
 import { Document } from "mongoose";
 import axios from "axios";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
-import { PlanType } from "../common/types";
 
 const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
@@ -94,6 +93,7 @@ async function register(req: Request, res: Response) {
     if (findUser) {
       return res.status(406).send("Email already exists");
     }
+    userData.registrationMethod = "manual";
     const user = await setupUser(userData);
     res.status(201).send({ _id: user._id });
   } catch (error) {
@@ -144,6 +144,7 @@ async function googleSignin(req: Request, res: Response) {
         fullName: given_name + " " + family_name,
         email,
         plan: "none",
+        registrationMethod:"google",
         password: "googlegoogle",
         imageUrl: picture,
       };

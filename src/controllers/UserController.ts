@@ -1,5 +1,5 @@
 import { BaseController } from "./BaseController";
-import UserModel, { IAccount, IUser } from "../models/UserModel";
+import UserModel, { hashPassword, IAccount, IUser, IUserSearchResult } from "../models/UserModel";
 import { Response } from "express";
 import { AuthRequest } from "./AuthController";
 import { PlanType } from "../common/types";
@@ -21,6 +21,7 @@ class UserController extends BaseController<IUser> {
         email: user.email,
         plan: user.plan,
         imageUrl: user.imageUrl,
+        registrationMethod: user.registrationMethod,
         _id: user._id?.toString(),
       };
       return res.status(200).send(account);
@@ -30,22 +31,58 @@ class UserController extends BaseController<IUser> {
     }
   }
 
+  async searchUsers(req: AuthRequest, res: Response) {
+    const userId = req.user._id;
+    try {
+      const { query } = req.query;
+
+      if (!query) {
+        return res.status(400).send("Query parameter is required");
+      }
+
+      const users: IUserSearchResult[] = await UserModel.find(
+        {
+          _id: { $ne: userId },
+          $or: [{ fullName: new RegExp(query as string, "i") }, { email: new RegExp(query as string, "i") }],
+        },
+        "fullName email imageUrl _id"
+      ).lean();
+
+      return res.status(200).send(users);
+    } catch (error) {
+      return res.status(500).send("Internal server error.");
+    }
+  }
+
   async updateUser(req: AuthRequest, res: Response) {
     const userId = req.user._id;
-    const updatedUser:IUser = req.body;
-
+    const updatedUser: IUser = req.body;
+    const { password, ...otherFields } = updatedUser;
     try {
-      const user = await UserModel.findByIdAndUpdate(userId, updatedUser, { new: true });
+      let user: IUser;
+      // Check if password is provided and needs to be updated
+      if (password && password.trim() !== "") {
+        const hashedPassword = await hashPassword(password);
+        updatedUser.password = hashedPassword;
+        user = await UserModel.findByIdAndUpdate(userId, updatedUser, { new: true });
+      } else {
+        // Update the user document with the provided fields
+        user = await UserModel.findByIdAndUpdate(userId, { ...otherFields }, { new: true });
+      }
+
       if (!user) {
         return res.status(404).send("User not found.");
       }
+
       const account: IAccount = {
         fullName: user.fullName,
         email: user.email,
         plan: user.plan,
         imageUrl: user.imageUrl,
+        registrationMethod: user.registrationMethod,
         _id: user._id?.toString(),
       };
+
       return res.status(200).send(account);
     } catch (error) {
       console.error("Error updating user:", error);

@@ -24,8 +24,12 @@ class ImageService implements FileToTextConverter {
   async convertToText(file: Express.Multer.File): Promise<string> {
     try {
       const [result] = await ImageAnnotator.textDetection(file.path);
-      const text = result.textAnnotations[0].description;
-      return text;
+      if (result.textAnnotations && result.textAnnotations.length > 0) {
+        const text = result.textAnnotations[0].description;
+        return text;
+      } else {
+        return "No Text";
+      }
     } catch (error) {
       throw error;
     }

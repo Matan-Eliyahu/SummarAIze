@@ -55,7 +55,7 @@ const storage = multer.diskStorage({
 export function returnPictureUrl(req: AuthRequest, res: Response) {
   if (req.file && req.file.filename) {
     const userId = req.user._id;
-    const imageUrl = `${req.protocol}://${req.get("host")}/uploads/profile-pictures/${userId}.${path.extname(req.file.originalname)}`;
+    const imageUrl = `${req.protocol}://${req.get("host")}/profile-pictures/${userId}${path.extname(req.file.originalname)}`;
 
     res.json({ imageUrl });
   } else {

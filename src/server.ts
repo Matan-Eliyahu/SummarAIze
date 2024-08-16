@@ -6,6 +6,7 @@ import cors from "cors";
 import mongoose from "mongoose";
 import AuthRoute from "./routes/AuthRoute";
 import FileRoute from "./routes/FileRoute";
+import FolderRoute from "./routes/FolderRoutes"
 import SettingsRoute from "./routes/SettingsRoute";
 import UploadRoute from "./routes/UploadRoute";
 import StorageRoute from "./routes/StorageRoute";
@@ -29,6 +30,7 @@ function initServer() {
       app.use("/settings", SettingsRoute);
       app.use("/upload", UploadRoute);
       app.use("/files", FileRoute);
+      app.use("/folders", FolderRoute);
       app.use("/storage", StorageRoute);
       app.use("/users", UserRoute);
       app.use("/summarize", SummarizeRoute);

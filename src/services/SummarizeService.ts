@@ -16,11 +16,14 @@ export interface ISummaryOptions {
 
 class SummarizeService {
   async summarize(text: string, options: ISummaryOptions): Promise<string> {
-    const prompt = this.generateSummarizePrompt(text,options);
-    const result = await model.generateContent(prompt);
-    const textResponse = result.response.text();
-
-    return textResponse.trim();
+    const prompt = this.generateSummarizePrompt(text, options);
+    try {
+      const result = await model.generateContent(prompt);
+      const textResponse = result.response.text();
+      return textResponse.trim();
+    } catch (error) {
+      throw error;
+    }
   }
 
   private generateSummarizePrompt(text: string, options: ISummaryOptions): string {

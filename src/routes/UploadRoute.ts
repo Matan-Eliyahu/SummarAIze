@@ -6,6 +6,6 @@ import saveFilesInfo from "../middleware/uploadMiddleware";
 const router = express.Router();
 
 router.post("/files", authMiddleware, upload.array("files", 10), saveFilesInfo);
-router.post("/profile-picture", upload.single("profile-picture"), returnPictureUrl);
+router.post("/profile-picture",authMiddleware, upload.single("profile-picture"), returnPictureUrl);
 
 export default router;

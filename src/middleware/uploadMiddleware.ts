@@ -5,6 +5,7 @@ import { AuthRequest } from "../controllers/AuthController";
 import { getFileType } from "../utils/files";
 import FileService from "../services/FileService";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
+import FolderModel from "../models/FolderModel";
 
 async function saveFilesInfo(req: AuthRequest, res: Response) {
   if (!req.files) {
@@ -13,6 +14,8 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
 
   const files = req.files as Express.Multer.File[];
   const userId = req.user._id;
+  const folderId = req.body.folderId || null;
+
   try {
     let fileName: string;
     let fileNames: string[] = [];
@@ -25,11 +28,24 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
       const size = +(file.size / (1024 * 1024)).toFixed(2);
       const status = "processing";
       const filePath = path.join(userId, type, fileName);
-      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date(), summaryOptions: userSettings.summaryOptions };
+      const ifile: IFile = { userId, name: fileName, type, size, status, path: filePath, transcribe: "", summary: "", title: "", keywords: [], uploadedAt: new Date(), summaryOptions: userSettings.summaryOptions, folderId };
       fileInfos.push(ifile);
     }
 
     await FileModel.insertMany(fileInfos); // Save files info to the database
+
+    // Update folder
+    if (folderId) {
+      const folder = await FolderModel.findById(folderId);
+      if (!folder) {
+        return res.status(400).send("Folder not found");
+      }
+      for (const ifile of fileInfos) {
+        folder.filesId.push(ifile._id);
+      }
+      folder.updatedAt = new Date();
+      await folder.save();
+    }
 
     res.status(201).send("Files uploaded and info saved");
 

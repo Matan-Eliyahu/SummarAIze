@@ -77,13 +77,17 @@ class FileService {
 
       if (autoSummarize) {
         // Summarize text
-        summary = await SummarizeService.summarize(transcribe, summaryOptions);
+        if (transcribe == "No Text") {
+          summary = transcribe;
+        } else {
+          summary = await SummarizeService.summarize(transcribe, summaryOptions);
 
-        additionalInfo = await SummarizeService.extractKeywordsAndTitle(transcribe);
-        transcribe = transcribe.trim();
-        summary = summary.trim();
+          additionalInfo = await SummarizeService.extractKeywordsAndTitle(transcribe);
+          transcribe = transcribe.trim();
+          summary = summary.trim();
 
-        status = "completed";
+          status = "completed";
+        }
       }
 
       // Update file status and details in the database

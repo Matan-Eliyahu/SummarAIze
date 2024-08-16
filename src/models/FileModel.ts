@@ -15,6 +15,7 @@ export interface IFileInfo {
   uploadedAt: Date;
   lastOpened?: Date;
   _id?: string;
+  folderId?: string;
 }
 
 export interface IFile extends IFileInfo {
@@ -54,6 +55,7 @@ const fileSchema = new Schema<IFile & Document>({
   summaryOptions: { type: summaryOptionsSchema, required: true },
   uploadedAt: { type: Date, required: true },
   lastOpened: { type: Date },
+  folderId: { type: String, ref: "Folder" },
 });
 
 const FileModel = model<IFile & Document>("File", fileSchema);
