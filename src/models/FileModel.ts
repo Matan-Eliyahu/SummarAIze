@@ -1,6 +1,6 @@
 import { Document, Schema, model } from "mongoose";
 import { FileType } from "../common/types";
-import { ISummaryOptions } from "../services/SummarizeService";
+import { ISummaryOptions } from "../services/TextService";
 
 export type FileStatus = "completed" | "processing" | "error" | "not-summarized";
 

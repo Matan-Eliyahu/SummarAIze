@@ -3,6 +3,7 @@ import UserModel, { hashPassword, IAccount, IUser, IUserSearchResult } from "../
 import { Response } from "express";
 import { AuthRequest } from "./AuthController";
 import { PlanType } from "../common/types";
+import FolderModel, { IFolder } from "../models/FolderModel";
 
 class UserController extends BaseController<IUser> {
   constructor() {
@@ -124,6 +125,40 @@ class UserController extends BaseController<IUser> {
       return res.status(200).send(user);
     } catch (error) {
       console.error("Error updating plan:", error);
+      return res.status(500).send("Internal server error.");
+    }
+  }
+
+  async getSharedFolderUsers(req: AuthRequest, res: Response) {
+    const userId = req.user._id;
+
+    try {
+      const sharedFolders: IFolder[] = await FolderModel.find({
+        $and: [
+          {
+            $or: [{ userId }, { sharedWith: userId }],
+          },
+          { isPrivate: false },
+        ],
+      }).lean();
+
+      let allSharedUserIds = new Set<string>();
+      for (const folder of sharedFolders) {
+        if (folder.userId.toString() === userId) {
+          for (const userId of folder.sharedWith) allSharedUserIds.add(userId);
+        } else {
+          allSharedUserIds.add(folder.userId);
+        }
+      }
+
+      const userIdsArray = Array.from(allSharedUserIds);
+
+      let sharedUsers: IUserSearchResult[] = await UserModel.find({ _id: { $in: userIdsArray } }, "fullName email imageUrl _id").lean();
+      sharedUsers.filter((user) => user._id.toString() !== userId);
+
+      return res.status(200).send(sharedUsers);
+    } catch (error) {
+      console.error("Error fetching users with shared folders:", error);
       return res.status(500).send("Internal server error.");
     }
   }

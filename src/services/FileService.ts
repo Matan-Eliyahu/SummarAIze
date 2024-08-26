@@ -4,13 +4,14 @@ import FileModel, { FileStatus, IFile } from "../models/FileModel";
 import AudioService from "./AudioService";
 import ImageService from "./ImageService";
 import PdfService from "./PdfService";
-import SummarizeService from "./SummarizeService";
-import { clients } from "../server";
+import TextService from "./TextService";
+import { clients } from "../webSocket";
 import WebSocket from "ws";
 import SettingsModel, { ISettings } from "../models/SettingsModel";
 
 interface IUpdate {
   fileName: string;
+  fileId: string;
   status: string;
 }
 
@@ -41,7 +42,7 @@ class FileService {
     }
   }
 
-  async processFile(file: Express.Multer.File, userId: string, fileName: string, type: FileType): Promise<void> {
+  async processFile(file: Express.Multer.File, userId: string, fileName: string, fileId: string, type: FileType): Promise<void> {
     let transcribe: string;
     let summary: string;
     let additionalInfo: { keywords: string[]; title: string };
@@ -71,6 +72,7 @@ class FileService {
 
       if (!transcribe) {
         status = "error";
+        console.log("no transcribe");
         throw new Error("Failed to parse text");
       }
       status = "not-summarized";
@@ -80,9 +82,9 @@ class FileService {
         if (transcribe == "No Text") {
           summary = transcribe;
         } else {
-          summary = await SummarizeService.summarize(transcribe, summaryOptions);
+          summary = await TextService.summarize(transcribe, summaryOptions);
 
-          additionalInfo = await SummarizeService.extractKeywordsAndTitle(transcribe);
+          additionalInfo = await TextService.extractKeywordsAndTitle(transcribe);
           transcribe = transcribe.trim();
           summary = summary.trim();
 
@@ -102,6 +104,7 @@ class FileService {
       if (client && client.readyState === WebSocket.OPEN) {
         const update: IUpdate = {
           fileName,
+          fileId,
           status,
         };
         client.send(JSON.stringify(update));

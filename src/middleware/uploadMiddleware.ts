@@ -14,11 +14,13 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
 
   const files = req.files as Express.Multer.File[];
   const userId = req.user._id;
-  const folderId = req.body.folderId || null;
+  const folderId = (req.query.folderId as string) || null;
+  console.log("******** ", req.query, " *********");
 
   try {
     let fileName: string;
     let fileNames: string[] = [];
+    let fileIds: string[] = [];
     const fileInfos: IFile[] = [];
     const userSettings: ISettings = await SettingsModel.findOne({ userId });
     for (const file of files) {
@@ -32,28 +34,37 @@ async function saveFilesInfo(req: AuthRequest, res: Response) {
       fileInfos.push(ifile);
     }
 
-    await FileModel.insertMany(fileInfos); // Save files info to the database
+    const ifiles: IFile[] = await FileModel.insertMany(fileInfos);
+
+    for (const ifile of ifiles) fileIds.push(ifile._id);
 
     // Update folder
     if (folderId) {
-      const folder = await FolderModel.findById(folderId);
+      const folder = await FolderModel.findById({ _id: folderId });
+
       if (!folder) {
         return res.status(400).send("Folder not found");
       }
-      for (const ifile of fileInfos) {
+
+      for (const ifile of ifiles) {
         folder.filesId.push(ifile._id);
+        folder.totalSize += ifile.size;
       }
+
       folder.updatedAt = new Date();
+      folder.status = userSettings.autoSummarizeEnabled ? "processing" : "not-summarized";
       await folder.save();
     }
 
-    res.status(201).send("Files uploaded and info saved");
+    // Return response
+    res.status(201).send();
 
-    files.forEach((file, index) => {
+    // Continue processing
+    for (let i = 0; i < files.length; i++) {
       setTimeout(async () => {
-        await FileService.processFile(file, userId, fileNames[index], getFileType(file.mimetype));
+        await FileService.processFile(files[i], userId, fileNames[i], fileIds[i], getFileType(files[i].mimetype));
       }, 0);
-    });
+    }
   } catch (error) {
     console.error("Error saving file info: ", error);
     return res.status(500).send("Internal server error");

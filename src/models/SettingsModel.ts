@@ -1,6 +1,6 @@
 import { Schema, model } from "mongoose";
 import { FileListView, FileType, Theme } from "../common/types";
-import { ISummaryOptions } from "../services/SummarizeService";
+import { ISummaryOptions } from "../services/TextService";
 
 export interface ISettings {
   userId: string;

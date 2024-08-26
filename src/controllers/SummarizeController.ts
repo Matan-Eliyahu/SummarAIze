@@ -1,7 +1,7 @@
 import { Response } from "express";
 import { AuthRequest } from "./AuthController";
 import FileModel, { IFile } from "../models/FileModel";
-import SummarizeService from "../services/SummarizeService";
+import TextService from "../services/TextService";
 
 class SummarizeController {
   async summarize(req: AuthRequest, res: Response) {
@@ -13,9 +13,13 @@ class SummarizeController {
       if (!file) {
         return res.status(404).send("File not found.");
       }
-      const summary = await SummarizeService.summarize(file.transcribe, summaryOptions);
+      if (!file.transcribe) {
+        return res.status(404).send("Transcribe not found.");        
+      }
+      const summary = await TextService.summarize(file.transcribe, summaryOptions);
       file.summary = summary;
       file.summaryOptions = summaryOptions;
+      if (file.status !== "completed") file.status = "completed";
       await file.save();
 
       return res.status(200).send(file as IFile);

@@ -1,10 +1,12 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Language } from "../common/types";
+import { IFolder } from "../models/FolderModel";
+import { IFile } from "../models/FileModel";
 
 const apiKey = process.env.GEMINI_API_KEY;
 const aiModel = process.env.GEMINI_MODEL;
 const genAI = new GoogleGenerativeAI(apiKey);
-const model = genAI.getGenerativeModel({ model: aiModel });
+const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
 
 export interface ISummaryOptions {
   length: "short" | "medium" | "long";
@@ -14,7 +16,7 @@ export interface ISummaryOptions {
   keywords: string[];
 }
 
-class SummarizeService {
+class TextService {
   async summarize(text: string, options: ISummaryOptions): Promise<string> {
     const prompt = this.generateSummarizePrompt(text, options);
     try {
@@ -22,6 +24,7 @@ class SummarizeService {
       const textResponse = result.response.text();
       return textResponse.trim();
     } catch (error) {
+      console.log("~~~~ GoogleAI Error: ", error);
       throw error;
     }
   }
@@ -29,28 +32,24 @@ class SummarizeService {
   private generateSummarizePrompt(text: string, options: ISummaryOptions): string {
     const { length, language, tone, detailLevel, keywords } = options;
 
-    let prompt = `Could you summarize this text with paragraphs and no titles, text only. `;
+    let prompt = `Could you summarize this please? `;
 
-    // Add length to the prompt
     prompt += `Summary length should be ${length}. `;
 
-    // Add language to the prompt
     if (language !== "auto") {
-      prompt += `The summary should be in ${language}. `;
+      prompt += `The summary must be in ${language}. `;
+    } else {
+      prompt += `The summary must be in the same language as the text.`;
     }
 
-    // Add tone to the prompt
     prompt += `The tone should be ${tone}. `;
 
-    // Add detail level to the prompt
     prompt += `Detail level should be ${detailLevel}. `;
 
-    // Add keywords to the prompt if there are any
     if (keywords.length > 0) {
       prompt += `Focus on the following keywords: ${keywords.join(", ")}. `;
     }
 
-    // Append the actual text
     prompt += `Here is the text: ${text}`;
 
     return prompt;
@@ -58,7 +57,7 @@ class SummarizeService {
 
   async extractKeywordsAndTitle(transcribe: string): Promise<{ keywords: string[]; title: string }> {
     const prompt = `
-      Extract a title and a list of keywords from the following text. Please provide the output in the exact format specified below:
+      Extract a title and a list of *maximum 10* keywords from the following text. Please provide the output in the exact format specified below:
   
       Title: [title]
       Keywords: [keyword1], [keyword2], [keyword3], ...
@@ -100,6 +99,33 @@ class SummarizeService {
       return { keywords: [], title: "Untitled" }; // Return fallback values in case of error
     }
   }
+
+  async searchInFolder(folderFiles: IFile[], query: string): Promise<IFile[]> {
+    const files = folderFiles.map((file) => ({
+      _id: file._id,
+      summary: file.summary,
+    }));
+
+    const filesJson = JSON.stringify(files);
+
+    let prompt = `Could you find any matches for this query: "${query}"?\n`;
+    prompt += `Here are the files as JSON objects: ${filesJson}\n`;
+    prompt += `Please provide the answer as a JSON array of "_id" values or an empty array if there are no matches.`;
+
+    try {
+      const result = await model.generateContent(prompt);
+      const textResponse = result.response.text();
+
+      const matchedIds: string[] = JSON.parse(textResponse.trim().replace(/`|json|JSON/g, ""));
+
+      const matchedFiles = folderFiles.filter((file) => matchedIds.includes(file._id.toString()));
+
+      return matchedFiles;
+    } catch (error) {
+      console.error("~~~~ GoogleAI Error: ", error);
+      throw error;
+    }
+  }
 }
 
-export default new SummarizeService();
+export default new TextService();

@@ -29,7 +29,6 @@ class StorageController {
         .slice(0, 2)
         .map((file) => file.name);
 
-      // Prepare the response object
       const storageInfo: IStorage = {
         totalSize: +totalSize.toFixed(2),
         pdfCount,
@@ -38,7 +37,6 @@ class StorageController {
         lastOpened: lastOpenedFiles,
       };
 
-      // Send the response
       res.status(200).json(storageInfo);
     } catch (error) {
       console.error("Error fetching storage info:", error);

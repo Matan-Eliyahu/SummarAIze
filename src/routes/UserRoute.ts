@@ -9,5 +9,6 @@ router.get("/search", authMiddleware, UserController.searchUsers.bind(UserContro
 router.put("/", authMiddleware, UserController.updateUser.bind(UserController));
 router.delete("/", authMiddleware, UserController.deleteUser.bind(UserController));
 router.put("/plan", authMiddleware, UserController.updatePlan.bind(UserController));
+router.get("/shared-folders", authMiddleware, UserController.getSharedFolderUsers.bind(UserController));
 
 export default router;

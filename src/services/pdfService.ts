@@ -9,6 +9,7 @@ class PdfService implements FileToTextConverter {
     try {
       // Parse PDF to text
       const data = fs.readFileSync(pdfFile.path);
+      if (!data) throw new Error("Error reading file")
       const res = await parsePdf(data);
       const text = res.text;
 

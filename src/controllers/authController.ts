@@ -10,6 +10,12 @@ const JWT_ACCESS_SECRET = process.env.JWT_ACCESS_SECRET;
 const JWT_REFRESH_SECRET = process.env.JWT_REFRESH_SECRET;
 const JWT_EXPIRATION = process.env.JWT_EXPIRATION;
 const GOOGLE_USER_INFO_URL = process.env.GOOGLE_USER_INFO_URL;
+const FACEBOOK_USER_INFO_URL = process.env.FACEBOOK_USER_INFO_URL;
+
+enum AuthProvider {
+  Google = "google",
+  Facebook = "facebook",
+}
 
 export interface AuthRequest extends Request {
   user?: { _id: string };
@@ -17,7 +23,7 @@ export interface AuthRequest extends Request {
 
 export interface IAuth {
   userId: string;
-  isInitial: boolean;
+  isInitialized: boolean;
   tokens: ITokens;
 }
 
@@ -36,7 +42,23 @@ interface GoogleUserInfo {
   email_verified: boolean;
 }
 
-async function generateTokens(user: Document & IUser) {
+interface FacebookUserInfo {
+  email: string;
+  id: string;
+  name: string;
+  picture: {
+    data: {
+      height: number;
+      is_silhouette: boolean;
+      url: string;
+      width: string;
+    };
+  };
+}
+
+type UserInfo = GoogleUserInfo | FacebookUserInfo;
+
+export async function generateTokens(user: Document & IUser) {
   const userPayload = { _id: user._id, time: new Date() };
   const accessToken = jwt.sign(userPayload, JWT_ACCESS_SECRET, { expiresIn: JWT_EXPIRATION });
   const refreshToken = jwt.sign(userPayload, JWT_REFRESH_SECRET);
@@ -83,22 +105,55 @@ async function setupUser(userData: IUser) {
   }
 }
 
-async function register(req: Request, res: Response) {
-  const userData: IUser = req.body;
-  if (!userData.email || !userData.password) {
-    return res.status(400).send("Email or password is missing");
-  }
+async function isEmailInUse(email: string): Promise<boolean> {
   try {
-    const findUser = await UserModel.findOne({ email: userData.email });
-    if (findUser) {
+    const user = await UserModel.findOne({ email });
+    return user !== null;
+  } catch (error) {
+    throw error;
+  }
+}
+
+async function checkEmail(req: Request, res: Response) {
+  const { email } = req.query;
+
+  if (!email || typeof email !== "string") {
+    return res.status(400).send("Email is required");
+  }
+
+  try {
+    const emailInUse = await isEmailInUse(email);
+    if (emailInUse) {
       return res.status(406).send("Email already exists");
     }
+    res.status(200).send();
+  } catch (error) {
+    console.log("Error checking email: ", error);
+    res.status(500).send("Internal server error");
+  }
+}
+
+async function register(req: Request, res: Response) {
+  const userData: IUser = req.body;
+  const { email, password } = userData;
+
+  if (!email || !password) {
+    return res.status(400).send("Email or password is missing");
+  }
+
+  try {
+    const emailInUse = await isEmailInUse(email);
+    if (emailInUse) {
+      return res.status(406).send("Email already exists");
+    }
+
     userData.registrationMethod = "manual";
     const user = await setupUser(userData);
+
     res.status(201).send({ _id: user._id });
   } catch (error) {
     console.log("Registration error: ", error);
-    return res.status(400).send(error.message);
+    res.status(500).send("Internal Server Error");
   }
 }
 
@@ -121,30 +176,33 @@ async function login(req: Request, res: Response) {
     const tokens = await generateTokens(user);
     const auth: IAuth = {
       userId: user._id,
-      isInitial: user.plan !== "none",
+      isInitialized: user.plan !== "none",
       tokens,
     };
     return res.status(200).send(auth);
   } catch (error) {
     console.log("Login error: ", error);
-    return res.status(400).send("Email or password is missing");
+    res.status(500).send("Internal Server Error");
   }
 }
 
-async function googleSignin(req: Request, res: Response) {
+async function googleLogin(req: Request, res: Response) {
   const tokenResponse = req.body;
   if (!tokenResponse.access_token) return res.status(403).send("Goolge login failed");
   const { access_token: accessToken } = tokenResponse;
   try {
-    const userInfo: GoogleUserInfo = await getGoolgeUserInfo(accessToken);
+    const userInfo = (await getUserInfo(accessToken, AuthProvider.Google)) as GoogleUserInfo;
     const { email, given_name, family_name, picture } = userInfo;
     let user = await UserModel.findOne({ email: email });
+    if (user && user.registrationMethod !== "google") {
+      return res.status(406).send("Email already exists");
+    }
     if (user == null) {
       const newGoogleUser: IUser = {
         fullName: given_name + " " + family_name,
         email,
         plan: "none",
-        registrationMethod:"google",
+        registrationMethod: "google",
         password: "googlegoogle",
         imageUrl: picture,
       };
@@ -153,13 +211,48 @@ async function googleSignin(req: Request, res: Response) {
     const tokens = await generateTokens(user);
     const auth: IAuth = {
       userId: user._id,
-      isInitial: user.plan !== "none",
+      isInitialized: user.plan !== "none",
       tokens,
     };
     res.status(200).send(auth);
   } catch (error) {
     console.log("Google singin error: ", error);
-    return res.status(400).send(error.message);
+    res.status(500).send("Internal Server Error");
+  }
+}
+
+async function facebookLogin(req: Request, res: Response) {
+  const accessToken = req.body.accessToken as string;
+  if (!accessToken) return res.status(403).send("Facebook login failed");
+
+  try {
+    const userInfo = (await getUserInfo(accessToken, AuthProvider.Facebook)) as FacebookUserInfo;
+    const { email, name, picture } = userInfo;
+    let user = await UserModel.findOne({ email: email });
+    if (user && user.registrationMethod !== "facebook") {
+      return res.status(406).send("Email already exists");
+    }
+    if (user == null) {
+      const newFacebookUser: IUser = {
+        fullName: name,
+        email,
+        plan: "none",
+        registrationMethod: "facebook",
+        password: "facebookfacebook",
+        imageUrl: picture.data.url,
+      };
+      user = await setupUser(newFacebookUser);
+    }
+    const tokens = await generateTokens(user);
+    const auth: IAuth = {
+      userId: user._id,
+      isInitialized: user.plan !== "none",
+      tokens,
+    };
+    res.status(200).send(auth);
+  } catch (error) {
+    console.log("Google singin error: ", error);
+    res.status(500).send("Internal Server Error");
   }
 }
 
@@ -187,7 +280,7 @@ async function logout(req: Request, res: Response) {
       }
     } catch (error) {
       console.log("Logout error: ", error);
-      res.status(403).send(error.message);
+      res.status(500).send("Internal Server Error");
     }
   });
 }
@@ -224,35 +317,62 @@ async function refreshToken(req: Request, res: Response) {
       };
       const newAuth: IAuth = {
         userId: user._id,
-        isInitial: user.plan !== "none",
+        isInitialized: user.plan !== "none",
         tokens,
       };
       return res.status(200).send(newAuth);
     } catch (error) {
       console.log("Refresh tokens error: ", error);
-      res.status(403).send(error.message);
+      res.status(500).send("Internal Server Error");
     }
   });
 }
 
-async function getGoolgeUserInfo(accessToken: string): Promise<GoogleUserInfo> {
+async function getUserInfo(accessToken: string, provider: AuthProvider): Promise<UserInfo> {
   try {
-    const res = await axios.get(GOOGLE_USER_INFO_URL, {
+    let userInfo: UserInfo;
+    let userInfoUrl: string;
+
+    switch (provider) {
+      case AuthProvider.Google:
+        userInfoUrl = GOOGLE_USER_INFO_URL;
+        break;
+      case AuthProvider.Facebook:
+        userInfoUrl = FACEBOOK_USER_INFO_URL;
+        break;
+      default:
+        throw new Error("Unsupported provider");
+    }
+
+    const res = await axios.get(userInfoUrl, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
       },
     });
-    const googleUserInfo: GoogleUserInfo = res.data;
-    return googleUserInfo;
+
+    switch (provider) {
+      case AuthProvider.Google:
+        userInfo = res.data as GoogleUserInfo;
+        break;
+      case AuthProvider.Facebook:
+        userInfo = res.data as FacebookUserInfo;
+        break;
+      default:
+        throw new Error("Unsupported provider");
+    }
+
+    return userInfo;
   } catch (error) {
     throw error;
   }
 }
 
 export default {
+  checkEmail,
   register,
   login,
-  googleSignin,
+  googleLogin,
+  facebookLogin,
   logout,
   refreshToken,
 };

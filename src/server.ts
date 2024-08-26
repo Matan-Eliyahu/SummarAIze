@@ -1,20 +1,19 @@
 import "dotenv/config";
 import express, { Express } from "express";
 import http, { Server as HttpServer } from "http";
-import WebSocket, { Server as WebSocketServer } from "ws";
+import { Server as WebSocketServer } from "ws";
 import cors from "cors";
 import mongoose from "mongoose";
 import AuthRoute from "./routes/AuthRoute";
 import FileRoute from "./routes/FileRoute";
-import FolderRoute from "./routes/FolderRoutes"
+import FolderRoute from "./routes/FolderRoutes";
 import SettingsRoute from "./routes/SettingsRoute";
 import UploadRoute from "./routes/UploadRoute";
 import StorageRoute from "./routes/StorageRoute";
 import UserRoute from "./routes/UserRoute";
 import SummarizeRoute from "./routes/SummarizeRoute";
 import UploadsStaticRoute from "./routes/UploadsStaticRoute";
-
-export const clients = new Map<string, WebSocket>();
+import { initWebSocketServer } from "./webSocket";
 
 function initServer() {
   const promise = new Promise<[HttpServer, Express, WebSocketServer]>((resolve) => {
@@ -37,18 +36,7 @@ function initServer() {
       app.use("/", UploadsStaticRoute); // Static
 
       const server = http.createServer(app);
-      const wss = new WebSocket.Server({ server });
-
-      wss.on("connection", (ws, req) => {
-        const userId = new URLSearchParams(req.url?.split("?")[1]).get("userId");
-        if (userId) {
-          clients.set(userId, ws);
-
-          ws.on("close", () => {
-            clients.delete(userId);
-          });
-        }
-      });
+      const wss = initWebSocketServer(server);
 
       resolve([server, app, wss]);
     });

@@ -2,7 +2,7 @@ import { Document, Schema, model } from "mongoose";
 import bcrypt from "bcrypt";
 import { PlanType } from "../common/types";
 
-export type RegistrationMethod = "manual" | "google" | "github";
+export type RegistrationMethod = "manual" | "google" | "facebook";
 
 export interface IAccount {
   fullName: string;
@@ -32,7 +32,7 @@ const userSchema = new Schema<IUser & Document>({
   password: { type: String, required: [true, "Please provide password"], minlength: 8 },
   imageUrl: { type: String, default: "" },
   refreshTokens: { type: [String], required: false },
-  registrationMethod: { type: String, enum: ["manual", "google", "github"], required: true },
+  registrationMethod: { type: String, enum: ["manual", "google", "facebook"], required: true },
 });
 
 userSchema.pre("save", async function (next) {
